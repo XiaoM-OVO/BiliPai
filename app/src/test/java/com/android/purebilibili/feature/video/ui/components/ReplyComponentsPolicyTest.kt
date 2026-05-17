@@ -564,11 +564,11 @@ class ReplyComponentsPolicyTest {
         val policy = resolveReplyItemLayoutPolicy()
 
         assertEquals(12, policy.horizontalPaddingDp)
-        assertEquals(38, policy.avatarSizeDp)
-        assertEquals(9, policy.avatarContentSpacingDp)
+        assertEquals(36, policy.avatarSizeDp)
+        assertEquals(8, policy.avatarContentSpacingDp)
         assertEquals(40, policy.actionButtonSizeDp)
         assertEquals(78, policy.decorationWidthReserveDp)
-        assertEquals(59, policy.dividerStartPaddingDp)
+        assertEquals(56, policy.dividerStartPaddingDp)
         assertEquals(
             289,
             resolveReplyItemTextColumnWidthDp(containerWidthDp = 360, policy = policy)

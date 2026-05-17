@@ -18,7 +18,6 @@ import androidx.compose.foundation.text.appendInlineContent
 //  Cupertino Icons - iOS SF Symbols 风格图标
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
-import io.github.alexzhirkevich.cupertino.icons.filled.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.filled.MoreVert
@@ -39,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.ImageLoader
 import coil.imageLoader
 //  已改用 MaterialTheme.colorScheme.primary
 import com.android.purebilibili.core.store.SettingsManager
@@ -111,13 +109,15 @@ internal data class ReplyItemLayoutPolicy(
 ) {
     val dividerStartPaddingDp: Int
         get() = horizontalPaddingDp + avatarSizeDp + avatarContentSpacingDp
+    val contentSpacingDp: Int
+        get() = avatarSizeDp + avatarContentSpacingDp
 }
 
 internal fun resolveReplyItemLayoutPolicy(): ReplyItemLayoutPolicy {
     return ReplyItemLayoutPolicy(
         horizontalPaddingDp = 12,
-        avatarSizeDp = 38,
-        avatarContentSpacingDp = 9,
+        avatarSizeDp = 36,
+        avatarContentSpacingDp = 8,
         actionButtonSizeDp = 40,
         decorationWidthReserveDp = 78,
         decorationImageWidthDp = 64,
@@ -1055,7 +1055,7 @@ fun ReplyItemView(
         }
     )
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(appearance.panelColor)
@@ -1071,8 +1071,8 @@ fun ReplyItemView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    top = 12.dp,
-                    bottom = 12.dp,
+                    top = 10.dp,
+                    bottom = 10.dp,
                     start = layoutPolicy.horizontalPaddingDp.dp,
                     end = layoutPolicy.horizontalPaddingDp.dp
                 )
@@ -1152,15 +1152,14 @@ fun ReplyItemView(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
                         text = metadataText,
                         fontSize = 12.sp,
+                        lineHeight = 16.sp,
                         color = appearance.secondaryTextColor
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Content
                     ReplyMessageText(
@@ -1194,8 +1193,6 @@ fun ReplyItemView(
                             }
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Footer Actions
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1254,7 +1251,7 @@ fun ReplyItemView(
 
                 // Sub-comments (Threaded view)
                 if (showSubPreview && (!item.replies.isNullOrEmpty() || item.rcount > 0)) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
