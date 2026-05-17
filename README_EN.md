@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <sub>Last updated: 2026-05-17 · Synced to v8.3.1 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
+  <sub>Last updated: 2026-05-18 · Synced to v8.3.2 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-8.3.1-fb7299?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-8.3.2-fb7299?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/stars/jay3-yy/BiliPai?style=flat-square&color=yellow" alt="Stars">
   <img src="https://img.shields.io/github/forks/jay3-yy/BiliPai?style=flat-square&color=green" alt="Forks">
   <img src="https://img.shields.io/github/last-commit/jay3-yy/BiliPai?style=flat-square&color=purple" alt="Last Commit">
@@ -432,14 +432,14 @@ A lightweight plugin format requiring **no coding**, just a simple JSON file to 
 
 See full changelog: [CHANGELOG.md](CHANGELOG.md)
 
-### Latest (v8.3.1 · 2026-05-17)
+### Latest (v8.3.2 · 2026-05-18)
 
-- Direct messages now have more complete session categories, settings, pagination, nickname refresh, profile completion, and preview parsing.
-- History, watch later, and favorites gained fuller management flows, including deletion, ordering, and invalid-item cleanup.
-- Home feed scroll position is preserved when switching away from Home and returning through the bottom tabs.
-- Dynamic posts and article rich text no longer show standalone `[图片]` / `【图片】` placeholders when real images are already rendered.
-- Predictive-back toggling, SponsorBlock auto-resume after skipping, duplicate settings section titles, and portrait fullscreen text readability were fixed.
-- Bumped the app to `8.3.1` with `versionCode` `195`.
+- Completed more of the plugin SDK and data-driven skin-package flow, including local decoration archive import, sample skin assets, and Home top/bottom skin readability fixes.
+- Fixed dynamic/article cover rendering, rich-text link routing, oversized video deep-link parsing, and internal dynamic link handling.
+- Completed following-list pagination and added smoother loading transitions.
+- Added per-digit blurred fade/slide motion and restrained haptics to landscape volume/brightness numbers, plus a smoother portrait fullscreen return-to-detail transition.
+- Merged the improved comments display, fixed Space avatar preview, and moved video-detail BGM discovery into an inline bottom sheet.
+- Bumped the app to `8.3.2` with `versionCode` `196`.
 
 ---
 

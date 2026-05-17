@@ -1,5 +1,32 @@
 # Changelog
 
+## v8.3.2 (2026-05-18)
+
+### 版本信息
+- 版本号从 `8.3.1` 升级到 `8.3.2`，`versionCode` 升级到 `196`。
+- 本次为“插件与皮肤包闭环、动态链接修复、关注分页补全、播放器动效、评论/BGM/空间页体验”的维护更新，汇总 8.3.1 到 8.3.2 的全部改动。
+
+### 更新内容
+- **插件 SDK 与皮肤包闭环**：完善插件 SDK 预览闭环，补齐数据型皮肤包预览、导入启用入口、资源渲染、装扮存档转皮肤包、应用内导入装扮存档皮肤和示例皮肤资源；修复沉底底栏皮肤失效、首页顶部/底栏布局、图标适配、文字裁切、深色可读性、色块与底栏文字颜色、悬浮底栏圆角裁剪和本地装扮皮肤解析去重。
+- **动态与链接解析**：修复动态专栏封面图显示、动态富文本链接误进视频页、超大视频深链误判动态、动态链接内部解析等问题，让专栏、动态、视频深链和 WebView 内部跳转更稳定。
+- **关注列表加载**：修复关注列表分页补全问题，补齐“加载更多”后的动态增量；关注分组/成员加载增加更平滑的 Lazy item 过渡，减少只显示前半段和加载突兀感。
+- **播放器手势动效**：横屏音量/亮度百分比数字统一为逐位上下渐隐、轻微模糊、非线性恢复和阻尼位移动效；数字变化只在有效刻度触发克制触感反馈，并同步到共享的手势百分比组件。
+- **竖屏视频返回详情**：竖屏全屏返回竖屏详情页时，覆盖层以顶部为锚点轻微缩小、上移并淡出，详情页内联播放器同步淡入并回到稳定比例，减少返回时整屏瞬间消失的割裂感。
+- **评论区显示**：合入更好的评论区显示方案，优化评论排序/筛选、回复组件和相关视频卡片比例，补充评论组件策略测试。
+- **视频详情 BGM 发现**：视频详情页内联“发现音乐”改为底部 Sheet，接入真实 BGM 详情、推荐视频、封面渲染、加载状态和影院/平板面板入口，减少跳网页的割裂感；修复合入后的 BGM 发现测试导入。
+- **空间页头像预览**：修复空间页头像无法预览的问题，头像点击可进入图片预览。
+- **预测性返回与评论反诈**：继续按官方语义修正预测性返回开关动画、关闭态拦截优先级，并修复评论反诈误判。
+- **版本与文档同步**：版本号升级到 `8.3.2` / `versionCode 196`，README、README_EN 和更新日志同步到 8.3.2。
+- **回归覆盖**：新增或更新插件包读取、皮肤包安装/解析、动态链接解析、关注分组、评论反诈、评论区组件、BGM 发现 Sheet、播放器手势动效、竖屏详情返回动效等策略与结构测试。
+
+### 验证
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.video.screen.PortraitDetailPresentationPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.video.ui.section.VideoGestureFeedbackPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.video.ui.section.BgmDiscoverySheetPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.video.ui.components.ReplyComponentsPolicyTest'`
+- `./gradlew :app:compileDebugKotlin`
+- `git diff --check`
+
 ## v8.3.1 (2026-05-17)
 
 ### 版本信息
