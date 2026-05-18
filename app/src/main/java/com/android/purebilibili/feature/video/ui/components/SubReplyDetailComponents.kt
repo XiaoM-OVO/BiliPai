@@ -2,6 +2,15 @@ package com.android.purebilibili.feature.video.ui.components
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -45,11 +54,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +86,7 @@ import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.filled.HandThumbsup
 import io.github.alexzhirkevich.cupertino.icons.outlined.HandThumbsup
 import io.github.alexzhirkevich.cupertino.icons.outlined.Trash
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 const val SUB_REPLY_DETAIL_HEADER_TAG = "subreply_detail_header"
@@ -107,6 +120,13 @@ internal data class SubReplyDetailListScrollResetKey(
     val firstConversationReplyId: Long?
 )
 
+internal data class SubReplyDetailRevealSpec(
+    val delayMillis: Int,
+    val durationMillis: Int,
+    val initialBlurRadiusDp: Float,
+    val initialOffsetDp: Int
+)
+
 internal typealias SubReplyDetailAppearance = VideoCommentAppearance
 
 internal fun resolveSubReplyDetailLayoutPolicy(
@@ -126,6 +146,19 @@ internal fun resolveSubReplyAuxiliaryBadgeVisualSpec(): SubReplyAuxiliaryBadgeVi
         imageLabelSpacingDp = 8,
         labelFontSizeSp = 12,
         labelLineHeightSp = 12
+    )
+}
+
+internal fun resolveSubReplyDetailRevealDelayMillis(levelIndex: Int): Int {
+    return (40 + levelIndex.coerceAtLeast(0) * 55).coerceAtMost(360)
+}
+
+internal fun resolveSubReplyDetailRevealSpec(levelIndex: Int): SubReplyDetailRevealSpec {
+    return SubReplyDetailRevealSpec(
+        delayMillis = resolveSubReplyDetailRevealDelayMillis(levelIndex),
+        durationMillis = 300,
+        initialBlurRadiusDp = 10f,
+        initialOffsetDp = 14
     )
 }
 
@@ -433,141 +466,160 @@ internal fun SubReplyDetailContent(
             contentPadding = PaddingValues(bottom = layoutPolicy.listBottomPaddingDp.dp)
         ) {
             item(key = "root_reply") {
-                Box(modifier = Modifier.testTag(SUB_REPLY_DETAIL_ROOT_TAG)) {
-                    SubReplyDetailItem(
-                        item = rootReply,
-                        appearance = appearance,
-                        isRootItem = true,
-                        upMid = upMid,
-                        emoteMap = emoteMap,
-                        showUpFlag = unusedShowUpFlag,
-                        onTimestampClick = onTimestampClick,
-                        onImagePreview = onImagePreview,
-                        onReplyClick = { onReplyClick?.invoke(rootReply) },
-                        onDeleteClick = if (currentMid > 0 && rootReply.mid == currentMid) {
-                            { onDeleteComment?.invoke(rootReply.rpid) }
-                        } else null,
-                        onLikeClick = { onCommentLike?.invoke(rootReply.rpid) },
-                        isLiked = rootReply.action == 1 || rootReply.rpid in likedComments,
-                        onUrlClick = onUrlClick,
-                        maxTimestampMs = maxTimestampMs,
-                        onReportClick = onReportComment?.let { report -> { reason -> report(rootReply.rpid, reason) } },
-                        onAvatarClick = { onAvatarClick?.invoke(it) ?: Unit },
-                        showConversationAction = false,
-                        onConversationClick = null,
-                        auxiliaryLabel = null,
-                        showTrailingDivider = false
-                    )
-                }
-                HorizontalDivider(thickness = 8.dp, color = appearance.sectionDividerColor)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .testTag(SUB_REPLY_DETAIL_SECTION_TAG),
-                    verticalAlignment = Alignment.CenterVertically
+                SubReplyDetailStaggeredReveal(
+                    revealKey = "root_${listScrollResetKey}",
+                    levelIndex = 0
                 ) {
-                    Text(
-                        text = if (effectiveConversationMode) {
-                            resolveSubReplyConversationSectionTitle(replyCount = visibleReplies.size)
-                        } else {
-                            resolveSubReplyDetailSectionTitle(replyCount = detailReplyDisplayCount)
-                        },
-                        fontSize = 14.sp,
-                        color = appearance.primaryTextColor,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (effectiveConversationMode) {
-                        Text(
-                            text = "返回全部回复",
-                            fontSize = 14.sp,
-                            color = appearance.sortTint,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier
-                                .clickable {
-                                    if (isConversationMode) {
-                                        onConversationBack?.invoke()
-                                    } else {
-                                        conversationAnchor = null
-                                    }
-                                }
-                                .padding(horizontal = 4.dp, vertical = 6.dp)
+                    Box(modifier = Modifier.testTag(SUB_REPLY_DETAIL_ROOT_TAG)) {
+                        SubReplyDetailItem(
+                            item = rootReply,
+                            appearance = appearance,
+                            isRootItem = true,
+                            upMid = upMid,
+                            emoteMap = emoteMap,
+                            showUpFlag = unusedShowUpFlag,
+                            onTimestampClick = onTimestampClick,
+                            onImagePreview = onImagePreview,
+                            onReplyClick = { onReplyClick?.invoke(rootReply) },
+                            onDeleteClick = if (currentMid > 0 && rootReply.mid == currentMid) {
+                                { onDeleteComment?.invoke(rootReply.rpid) }
+                            } else null,
+                            onLikeClick = { onCommentLike?.invoke(rootReply.rpid) },
+                            isLiked = rootReply.action == 1 || rootReply.rpid in likedComments,
+                            onUrlClick = onUrlClick,
+                            maxTimestampMs = maxTimestampMs,
+                            onReportClick = onReportComment?.let { report -> { reason -> report(rootReply.rpid, reason) } },
+                            onAvatarClick = { onAvatarClick?.invoke(it) ?: Unit },
+                            showConversationAction = false,
+                            onConversationClick = null,
+                            auxiliaryLabel = null,
+                            showTrailingDivider = false
                         )
-                    } else {
-                        Row(
-                            modifier = Modifier.testTag(SUB_REPLY_DETAIL_SORT_TAG),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Sort,
-                                contentDescription = "Sort",
-                                tint = appearance.sortTint,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = "按时间",
-                                fontSize = 14.sp,
-                                color = appearance.sortTint,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
                     }
                 }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = appearance.dividerColor
-                )
+                SubReplyDetailStaggeredReveal(
+                    revealKey = "section_${listScrollResetKey}",
+                    levelIndex = 1
+                ) {
+                    Column {
+                        HorizontalDivider(thickness = 8.dp, color = appearance.sectionDividerColor)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .testTag(SUB_REPLY_DETAIL_SECTION_TAG),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = if (effectiveConversationMode) {
+                                    resolveSubReplyConversationSectionTitle(replyCount = visibleReplies.size)
+                                } else {
+                                    resolveSubReplyDetailSectionTitle(replyCount = detailReplyDisplayCount)
+                                },
+                                fontSize = 14.sp,
+                                color = appearance.primaryTextColor,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (effectiveConversationMode) {
+                                Text(
+                                    text = "返回全部回复",
+                                    fontSize = 14.sp,
+                                    color = appearance.sortTint,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier
+                                        .clickable {
+                                            if (isConversationMode) {
+                                                onConversationBack?.invoke()
+                                            } else {
+                                                conversationAnchor = null
+                                            }
+                                        }
+                                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                                )
+                            } else {
+                                Row(
+                                    modifier = Modifier.testTag(SUB_REPLY_DETAIL_SORT_TAG),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Outlined.Sort,
+                                        contentDescription = "Sort",
+                                        tint = appearance.sortTint,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "按时间",
+                                        fontSize = 14.sp,
+                                        color = appearance.sortTint,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = appearance.dividerColor
+                        )
+                    }
+                }
             }
 
             itemsIndexed(
                 items = visibleReplies,
                 key = { _, item -> item.rpid }
             ) { index, item ->
-                MaybeDissolvableVideoCard(
-                    isDissolving = item.rpid in dissolvingIds,
-                    onDissolveComplete = { onDeleteComment?.invoke(item.rpid) },
-                    cardId = "subreply_detail_${item.rpid}",
-                    modifier = Modifier.padding(bottom = 1.dp)
+                SubReplyDetailStaggeredReveal(
+                    revealKey = "reply_${listScrollResetKey}_${item.rpid}",
+                    levelIndex = index + 2
                 ) {
-                    SubReplyDetailItem(
-                        item = item,
-                        appearance = appearance,
-                        isRootItem = false,
-                        upMid = upMid,
-                        emoteMap = emoteMap,
-                        showUpFlag = unusedShowUpFlag,
-                        onTimestampClick = onTimestampClick,
-                        onImagePreview = onImagePreview,
-                        onReplyClick = { onReplyClick?.invoke(item) },
-                        onDeleteClick = if (currentMid > 0 && item.mid == currentMid) {
-                            { onDissolveStart?.invoke(item.rpid) }
-                        } else null,
-                        onLikeClick = { onCommentLike?.invoke(item.rpid) },
-                        isLiked = item.action == 1 || item.rpid in likedComments,
-                        onUrlClick = onUrlClick,
-                        maxTimestampMs = maxTimestampMs,
-                        onReportClick = onReportComment?.let { report -> { reason -> report(item.rpid, reason) } },
-                        onAvatarClick = { onAvatarClick?.invoke(it) ?: Unit },
-                        showConversationAction = shouldRenderSubReplyConversationAction(
+                    MaybeDissolvableVideoCard(
+                        isDissolving = item.rpid in dissolvingIds,
+                        onDissolveComplete = { onDeleteComment?.invoke(item.rpid) },
+                        cardId = "subreply_detail_${item.rpid}",
+                        modifier = Modifier.padding(bottom = 1.dp)
+                    ) {
+                        SubReplyDetailItem(
                             item = item,
-                            hasConversationHandler = true
-                        ),
-                        onConversationClick = {
-                            if (onConversationClick != null) {
-                                onConversationClick(item)
+                            appearance = appearance,
+                            isRootItem = false,
+                            upMid = upMid,
+                            emoteMap = emoteMap,
+                            showUpFlag = unusedShowUpFlag,
+                            onTimestampClick = onTimestampClick,
+                            onImagePreview = onImagePreview,
+                            onReplyClick = { onReplyClick?.invoke(item) },
+                            onDeleteClick = if (currentMid > 0 && item.mid == currentMid) {
+                                { onDissolveStart?.invoke(item.rpid) }
                             } else {
-                                conversationAnchor = item
-                            }
-                        },
-                        auxiliaryLabel = if (showIdentityDecorations) {
-                            resolveSubReplyAuxiliaryLabel(item)
-                        } else {
-                            null
-                        },
-                        showTrailingDivider = true
-                    )
+                                null
+                            },
+                            onLikeClick = { onCommentLike?.invoke(item.rpid) },
+                            isLiked = item.action == 1 || item.rpid in likedComments,
+                            onUrlClick = onUrlClick,
+                            maxTimestampMs = maxTimestampMs,
+                            onReportClick = onReportComment?.let { report -> { reason -> report(item.rpid, reason) } },
+                            onAvatarClick = { onAvatarClick?.invoke(it) ?: Unit },
+                            showConversationAction = shouldRenderSubReplyConversationAction(
+                                item = item,
+                                hasConversationHandler = true
+                            ),
+                            onConversationClick = {
+                                if (onConversationClick != null) {
+                                    onConversationClick(item)
+                                } else {
+                                    conversationAnchor = item
+                                }
+                            },
+                            auxiliaryLabel = if (showIdentityDecorations) {
+                                resolveSubReplyAuxiliaryLabel(item)
+                            } else {
+                                null
+                            },
+                            showTrailingDivider = true
+                        )
+                    }
                 }
             }
 
@@ -945,6 +997,64 @@ private fun SubReplyDetailItem(
                 thickness = 0.5.dp,
                 color = appearance.dividerColor
             )
+        }
+    }
+}
+
+@Composable
+private fun SubReplyDetailStaggeredReveal(
+    revealKey: Any,
+    levelIndex: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val spec = remember(levelIndex) { resolveSubReplyDetailRevealSpec(levelIndex) }
+    var visible by remember(revealKey) { mutableStateOf(false) }
+    var blurSettled by remember(revealKey) { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val blurRadiusDp by animateFloatAsState(
+        targetValue = if (visible && blurSettled) 0f else spec.initialBlurRadiusDp,
+        animationSpec = tween(durationMillis = spec.durationMillis),
+        label = "sub_reply_detail_reveal_blur"
+    )
+    val offsetDp by animateFloatAsState(
+        targetValue = if (visible) 0f else spec.initialOffsetDp.toFloat(),
+        animationSpec = tween(durationMillis = spec.durationMillis),
+        label = "sub_reply_detail_reveal_offset"
+    )
+
+    LaunchedEffect(revealKey, levelIndex) {
+        visible = false
+        blurSettled = false
+        delay(spec.delayMillis.toLong())
+        visible = true
+        delay(16)
+        blurSettled = true
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(animationSpec = tween(durationMillis = spec.durationMillis)) +
+            expandVertically(
+                animationSpec = tween(durationMillis = spec.durationMillis),
+                expandFrom = Alignment.Top
+            ) +
+            slideInVertically(animationSpec = tween(durationMillis = spec.durationMillis)) { height ->
+                height / 5
+            },
+        exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+            shrinkVertically(animationSpec = tween(durationMillis = 120), shrinkTowards = Alignment.Top)
+    ) {
+        Box(
+            modifier = Modifier
+                .animateContentSize(animationSpec = tween(durationMillis = spec.durationMillis))
+                .graphicsLayer {
+                    translationY = with(density) { offsetDp.dp.toPx() }
+                }
+                .blur(blurRadiusDp.dp)
+        ) {
+            content()
         }
     }
 }

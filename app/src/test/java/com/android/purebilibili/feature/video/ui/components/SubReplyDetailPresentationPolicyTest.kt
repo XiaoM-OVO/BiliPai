@@ -25,6 +25,24 @@ class SubReplyDetailPresentationPolicyTest {
     }
 
     @Test
+    fun `sub reply detail reveal motion staggers by hierarchy`() {
+        assertEquals(40, resolveSubReplyDetailRevealDelayMillis(levelIndex = 0))
+        assertEquals(95, resolveSubReplyDetailRevealDelayMillis(levelIndex = 1))
+        assertEquals(150, resolveSubReplyDetailRevealDelayMillis(levelIndex = 2))
+        assertEquals(360, resolveSubReplyDetailRevealDelayMillis(levelIndex = 20))
+    }
+
+    @Test
+    fun `sub reply detail reveal motion keeps blur and expand readable`() {
+        val spec = resolveSubReplyDetailRevealSpec(levelIndex = 2)
+
+        assertEquals(150, spec.delayMillis)
+        assertEquals(300, spec.durationMillis)
+        assertEquals(10f, spec.initialBlurRadiusDp)
+        assertEquals(14, spec.initialOffsetDp)
+    }
+
+    @Test
     fun `sub reply detail display count keeps root declared total when page only loaded partially`() {
         assertEquals(
             8,
