@@ -80,8 +80,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -2109,19 +2112,50 @@ private fun SpaceContributionExpandedTabRail(
     val safeSelectedIndex = tabSpec.selectedIndex.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val labelTextStyle = MaterialTheme.typography.labelMedium.copy(
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium
+    )
+    val minimumTouchTargetWidth = LocalViewConfiguration.current.minimumTouchTargetSize.width
+    val labelHorizontalPadding = minimumTouchTargetWidth / 2
+    val containerHorizontalPadding = 3.dp
 
     BoxWithConstraints(modifier = modifier.height(toolbarSpec.expandedTabRailHeightDp.dp)) {
         val viewportWidth = maxWidth
+        val tabWidths = remember(
+            tabs,
+            textMeasurer,
+            labelTextStyle,
+            density,
+            minimumTouchTargetWidth,
+            labelHorizontalPadding
+        ) {
+            tabs.map { tab ->
+                val textWidth = textMeasurer.measure(
+                    text = AnnotatedString(tab.title),
+                    style = labelTextStyle
+                ).size.width
+                val measuredWidth = with(density) { textWidth.toDp() } + labelHorizontalPadding
+                maxOf(measuredWidth, minimumTouchTargetWidth)
+            }
+        }
+        val expandedContentWidth = tabWidths.fold(containerHorizontalPadding * 2) { width, tabWidth ->
+            width + tabWidth
+        }
+        val shouldScrollTabs = tabSpec.scrollable || expandedContentWidth > viewportWidth
 
-        LaunchedEffect(tabSpec.scrollable, safeSelectedIndex, tabSpec.itemWidthDp, viewportWidth) {
-            val itemWidthDp = tabSpec.itemWidthDp ?: return@LaunchedEffect
-            if (!tabSpec.scrollable) return@LaunchedEffect
+        LaunchedEffect(shouldScrollTabs, safeSelectedIndex, tabWidths, viewportWidth) {
+            if (!shouldScrollTabs) return@LaunchedEffect
             val target = with(density) {
-                resolveSpaceContributionTabCenteredScrollOffsetPx(
-                    selectedIndex = safeSelectedIndex,
-                    itemWidthPx = itemWidthDp.dp.toPx(),
-                    viewportWidthPx = viewportWidth.toPx()
-                )
+                val selectedStartPx = tabWidths
+                    .take(safeSelectedIndex)
+                    .sumOf { it.toPx().toDouble() }
+                    .toFloat()
+                val selectedWidthPx = tabWidths.getOrNull(safeSelectedIndex)?.toPx() ?: 0f
+                (selectedStartPx - (viewportWidth.toPx() - selectedWidthPx) / 2f)
+                    .toInt()
+                    .coerceAtLeast(0)
             }
             scrollState.animateScrollTo(target)
         }
@@ -2129,24 +2163,51 @@ private fun SpaceContributionExpandedTabRail(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (tabSpec.scrollable) Modifier.horizontalScroll(scrollState) else Modifier)
+                .then(if (shouldScrollTabs) Modifier.horizontalScroll(scrollState) else Modifier)
         ) {
-            BottomBarLiquidSegmentedControl(
-                items = tabs.map { it.title },
-                selectedIndex = safeSelectedIndex,
-                onSelected = { index ->
-                    tabs.getOrNull(index)?.let { onSelect(it.id) }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                itemWidth = if (tabSpec.scrollable) tabSpec.itemWidthDp?.dp else null,
-                height = toolbarSpec.expandedTabRailHeightDp.dp,
-                indicatorHeight = toolbarSpec.tabIndicatorHeightDp.dp,
-                labelFontSize = 13.sp,
-                containerHorizontalPadding = 3.dp,
-                containerVerticalPadding = 3.dp,
-                liquidGlassEffectsEnabled = tabSpec.liquidGlassEffectsEnabled,
-                dragSelectionEnabled = tabSpec.dragSelectionEnabled
-            )
+            Row(
+                modifier = Modifier
+                    .width(expandedContentWidth)
+                    .height(toolbarSpec.expandedTabRailHeightDp.dp)
+                    .padding(horizontal = containerHorizontalPadding),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                tabs.forEachIndexed { index, tab ->
+                    val selected = index == safeSelectedIndex
+                    Box(
+                        modifier = Modifier
+                            .width(tabWidths.getOrElse(index) { minimumTouchTargetWidth })
+                            .height(toolbarSpec.expandedTabRailHeightDp.dp)
+                            .clip(AppShapes.container(ContainerLevel.Pill))
+                            .clickable { onSelect(tab.id) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selected) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .padding(vertical = containerHorizontalPadding)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                                        shape = AppShapes.container(ContainerLevel.Pill)
+                                    )
+                            )
+                        }
+                        Text(
+                            text = tab.title,
+                            style = labelTextStyle,
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
