@@ -44,6 +44,13 @@ class SubReplyDetailPresentationPolicyTest {
     }
 
     @Test
+    fun `sub reply detail drag handle dismisses only after threshold`() {
+        assertFalse(shouldDismissSubReplyByVerticalDrag(dragDistancePx = 71f, thresholdPx = 72f))
+        assertTrue(shouldDismissSubReplyByVerticalDrag(dragDistancePx = 72f, thresholdPx = 72f))
+        assertTrue(shouldDismissSubReplyByVerticalDrag(dragDistancePx = 96f, thresholdPx = 72f))
+    }
+
+    @Test
     fun `sub reply detail component does not apply compose blur`() {
         val source = File("src/main/java/com/android/purebilibili/feature/video/ui/components/SubReplyDetailComponents.kt").readText()
 
@@ -58,6 +65,15 @@ class SubReplyDetailPresentationPolicyTest {
 
         assertFalse(source.contains("revealKey = \"reply_"))
         assertFalse(source.contains("LaunchedEffect(isLoading, isEnd)"))
+    }
+
+    @Test
+    fun `sub reply detail exposes centered drag handle`() {
+        val source = File("src/main/java/com/android/purebilibili/feature/video/ui/components/SubReplyDetailComponents.kt").readText()
+
+        assertTrue(source.contains("SUB_REPLY_DETAIL_DISMISS_HANDLE_TAG"))
+        assertTrue(source.contains("detectVerticalDragGestures"))
+        assertTrue(source.contains("shouldDismissSubReplyByVerticalDrag"))
     }
 
     @Test
