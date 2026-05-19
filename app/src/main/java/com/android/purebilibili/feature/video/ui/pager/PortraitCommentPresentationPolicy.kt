@@ -4,6 +4,7 @@ internal fun shouldUseEmbeddedVideoSubReplyPresentation(): Boolean = true
 
 private const val FULLSCREEN_VIDEO_SUB_REPLY_SHEET_HEIGHT_FRACTION = 1f
 private const val MAIN_COMMENT_SHEET_HEIGHT_FRACTION = 0.60f
+private const val PORTRAIT_COMMENT_EXPANDED_PLAYER_SCALE = 0.58f
 
 internal fun shouldShowDetachedVideoSubReplySheet(
     useEmbeddedPresentation: Boolean
@@ -57,11 +58,17 @@ internal fun resolvePortraitCommentPlayerTransform(
     }
     val sheetFraction = commentSheetHeightFraction.coerceIn(0f, 1f)
     val visibleHeightFraction = (1f - sheetFraction * progress).coerceIn(0f, 1f)
+    val scale = 1f - ((1f - PORTRAIT_COMMENT_EXPANDED_PLAYER_SCALE) * progress)
+    val translationYPx = if (containerHeightPx > 0) {
+        (visibleHeightFraction - scale) * containerHeightPx.toFloat()
+    } else {
+        0f
+    }
 
     return PortraitCommentPlayerTransform(
         progress = progress,
-        scale = visibleHeightFraction,
-        translationYPx = 0f,
+        scale = scale,
+        translationYPx = translationYPx,
         visibleHeightFraction = visibleHeightFraction,
         overlayAlpha = (1f - progress).coerceIn(0f, 1f),
         playerGesturesEnabled = progress <= 0.001f
