@@ -45,6 +45,14 @@ internal fun BiliPaiNavDisplayHost(
             content = scopedContent
         )
     }
+    val predictivePopRouteTransition = remember(motionMode, sourceMetadata, safeBackStack) {
+        resolveBiliPaiNavDisplayPredictivePopRouteTransition(
+            motionMode = motionMode,
+            sourceMetadata = sourceMetadata,
+            fromKey = safeBackStack.lastOrNull(),
+            toKey = safeBackStack.getOrNull(safeBackStack.lastIndex - 1)
+        )
+    }
 
     NavDisplay(
         backStack = safeBackStack,
@@ -62,12 +70,7 @@ internal fun BiliPaiNavDisplayHost(
             resolveBiliPaiNavContentTransform(BiliPaiNavRouteTransition.FALLBACK)
         },
         predictivePopTransitionSpec = {
-            val transition = if (shouldUseNavigation3PredictivePop(motionMode)) {
-                BiliPaiNavRouteTransition.PREDICTIVE_PROGRESS
-            } else {
-                BiliPaiNavRouteTransition.CLASSIC_CARD
-            }
-            resolveBiliPaiNavContentTransform(transition)
+            resolveBiliPaiNavContentTransform(predictivePopRouteTransition)
         },
         entryProvider = entryProvider
     )

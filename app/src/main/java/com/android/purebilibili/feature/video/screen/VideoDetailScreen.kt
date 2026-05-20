@@ -249,8 +249,10 @@ private const val COVER_TAKEOVER_PRE_BACK_DELAY_MILLIS = 16L
 internal fun resolveForceCoverOnlyForReturn(
     forceCoverOnlyOnReturn: Boolean,
     isReturningFromDetail: Boolean,
-    isExitTransitionInProgress: Boolean
+    isExitTransitionInProgress: Boolean,
+    detailShellSharedBoundsEnabled: Boolean = false
 ): Boolean {
+    if (detailShellSharedBoundsEnabled) return false
     return forceCoverOnlyOnReturn || isReturningFromDetail
 }
 
@@ -1474,7 +1476,8 @@ fun VideoDetailScreen(
     val forceCoverOnlyForReturn = resolveForceCoverOnlyForReturn(
         forceCoverOnlyOnReturn = forceCoverOnlyOnReturn,
         isReturningFromDetail = isReturningFromDetail,
-        isExitTransitionInProgress = isExitTransitionInProgress
+        isExitTransitionInProgress = isExitTransitionInProgress,
+        detailShellSharedBoundsEnabled = detailShellSharedBoundsEnabled
     )
 
     val handleTopBarAction = remember(

@@ -44,6 +44,57 @@ class BiliPaiNavMotionPolicyTest {
     }
 
     @Test
+    fun navDisplayPredictivePop_sharedReadyVideoReturn_keepsRouteLayerNoOp() {
+        val transition = resolveBiliPaiNavDisplayPredictivePopRouteTransition(
+            motionMode = BiliPaiNavMotionMode.PREDICTIVE_STABLE,
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "history:BV1",
+                sourceRoute = "history",
+                clickedBoundsRecorded = true,
+                cardFullyVisible = true
+            ),
+            fromKey = BiliPaiNavKey.VideoDetail("BV1", sourceRoute = "history"),
+            toKey = BiliPaiNavKey.History
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transition)
+    }
+
+    @Test
+    fun navDisplayPredictivePop_withoutSharedReady_keepsPredictiveRouteLayer() {
+        val transition = resolveBiliPaiNavDisplayPredictivePopRouteTransition(
+            motionMode = BiliPaiNavMotionMode.PREDICTIVE_STABLE,
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "history:BV1",
+                sourceRoute = "history",
+                clickedBoundsRecorded = true,
+                cardFullyVisible = false
+            ),
+            fromKey = BiliPaiNavKey.VideoDetail("BV1", sourceRoute = "history"),
+            toKey = BiliPaiNavKey.History
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.PREDICTIVE_PROGRESS, transition)
+    }
+
+    @Test
+    fun navDisplayPredictivePop_withStaleVideoSource_keepsPredictiveRouteLayer() {
+        val transition = resolveBiliPaiNavDisplayPredictivePopRouteTransition(
+            motionMode = BiliPaiNavMotionMode.PREDICTIVE_STABLE,
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "history:BV1",
+                sourceRoute = "history",
+                clickedBoundsRecorded = true,
+                cardFullyVisible = true
+            ),
+            fromKey = BiliPaiNavKey.VideoDetail("BV2", sourceRoute = "history"),
+            toKey = BiliPaiNavKey.History
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.PREDICTIVE_PROGRESS, transition)
+    }
+
+    @Test
     fun sharedElementReady_homeVideoForward_prefersNoOpRouteLayer() {
         val decision = resolveBiliPaiNavMotionDecision(
             fromKey = BiliPaiNavKey.Home,

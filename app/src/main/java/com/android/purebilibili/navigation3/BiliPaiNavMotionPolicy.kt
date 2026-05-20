@@ -73,6 +73,33 @@ internal fun resolveBiliPaiNavMotionDecision(
     )
 }
 
+internal fun resolveBiliPaiNavDisplayPredictivePopRouteTransition(
+    motionMode: BiliPaiNavMotionMode,
+    sourceMetadata: BiliPaiNavSourceMetadata,
+    fromKey: BiliPaiNavKey?,
+    toKey: BiliPaiNavKey?
+): BiliPaiNavRouteTransition {
+    val fromVideoKey = fromKey as? BiliPaiNavKey.VideoDetail
+    val normalizedSourceRoute = sourceMetadata.sourceRoute?.substringBefore("?")
+    val normalizedVideoRoute = fromVideoKey?.sourceRoute?.substringBefore("?")
+    val sourceMatchesCurrentVideo = fromVideoKey != null &&
+        normalizedSourceRoute != null &&
+        normalizedVideoRoute == normalizedSourceRoute &&
+        sourceMetadata.sourceKey == "$normalizedSourceRoute:${fromVideoKey.bvid}"
+    val sharedReadyVideoToSourceCard = sourceMetadata.sharedTransitionReady &&
+        sourceMatchesCurrentVideo &&
+        toKey != null &&
+        isCardReturnTargetNavKey(toKey)
+    if (sharedReadyVideoToSourceCard) {
+        return BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
+    }
+    return if (shouldUseNavigation3PredictivePop(motionMode)) {
+        BiliPaiNavRouteTransition.PREDICTIVE_PROGRESS
+    } else {
+        BiliPaiNavRouteTransition.CLASSIC_CARD
+    }
+}
+
 internal fun shouldInterceptSystemBackForNavigation3(
     mode: BiliPaiNavMotionMode,
     appBackActionRequiresInterception: Boolean
