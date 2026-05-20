@@ -23,6 +23,18 @@ internal sealed interface BiliPaiNavKey : NavKey {
     }
 
     @Serializable
+    data object SearchTrending : BiliPaiNavKey {
+        override val routeBase: String = "search_trending"
+    }
+
+    @Serializable
+    data class TopicDetail(
+        val topicId: Long
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "topic"
+    }
+
+    @Serializable
     data object Settings : BiliPaiNavKey {
         override val routeBase: String = "settings"
     }
@@ -209,6 +221,49 @@ internal sealed interface BiliPaiNavKey : NavKey {
     @Serializable
     data object AudioMode : BiliPaiNavKey {
         override val routeBase: String = "audio_mode"
+    }
+
+    @Serializable
+    data class SeasonSeriesDetail(
+        val type: String,
+        val id: Long,
+        val mid: Long,
+        val title: String = "",
+        val ownerName: String = ""
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "season_series_detail"
+    }
+
+    @Serializable
+    data class Bangumi(
+        val initialType: Int = 1
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "bangumi"
+    }
+
+    @Serializable
+    data class BangumiPlayer(
+        val seasonId: Long,
+        val epId: Long,
+        val resumePositionMs: Long = 0L
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "bangumi/play"
+    }
+
+    @Serializable
+    data class MusicDetail(
+        val sid: Long
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "music"
+    }
+
+    @Serializable
+    data class NativeMusic(
+        val title: String,
+        val bvid: String,
+        val cid: Long
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "native_music"
     }
 
     @Serializable

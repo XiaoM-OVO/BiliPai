@@ -1412,7 +1412,7 @@ fun AppNavigation(
                                     }
                                 },
                                 onBack = { performSystemBackAction() },
-                                onOpenTrending = { pushNavigation3Route(ScreenRoutes.SearchTrending.route) },
+                                onOpenTrending = { pushNavigation3Key(BiliPaiNavKey.SearchTrending) },
                                 onVideoClick = { bvid, cid -> navigateToVideoInNavigation3(bvid, cid, "") },
                                 onUpClick = { mid -> pushNavigation3Route(ScreenRoutes.Space.createRoute(mid)) },
                                 onBangumiClick = { seasonId ->
@@ -1425,7 +1425,7 @@ fun AppNavigation(
                                 },
                                 onTopicClick = { topicId ->
                                     if (topicId > 0L) {
-                                        pushNavigation3Route(ScreenRoutes.TopicDetail.createRoute(topicId))
+                                        pushNavigation3Key(BiliPaiNavKey.TopicDetail(topicId))
                                     }
                                 },
                                 onArticleClick = { articleId, title ->
@@ -1452,6 +1452,33 @@ fun AppNavigation(
                                 }
                             )
                         }
+                        BiliPaiNavEntryContentRole.SEARCH_TRENDING ->
+                            com.android.purebilibili.feature.search.SearchTrendingScreen(
+                                onBack = { performSystemBackAction() },
+                                onKeywordClick = submitSearchKeywordInNavigation3
+                            )
+                        BiliPaiNavEntryContentRole.TOPIC_DETAIL -> {
+                                val topicKey = key as BiliPaiNavKey.TopicDetail
+                                com.android.purebilibili.feature.search.TopicDetailScreen(
+                                    topicId = topicKey.topicId,
+                                    onBack = { performSystemBackAction() },
+                                    onVideoClick = { bvid -> navigateToVideoInNavigation3(bvid, 0L, "") },
+                                    onBangumiClick = { seasonId, epId ->
+                                        if (seasonId > 0L || epId > 0L) {
+                                            pushNavigation3Key(
+                                                BiliPaiNavKey.BangumiDetail(seasonId = seasonId, epId = epId)
+                                            )
+                                        }
+                                    },
+                                    onUserClick = { mid -> pushNavigation3Key(BiliPaiNavKey.Space(mid)) },
+                                    onLiveClick = { roomId, title, uname ->
+                                        pushNavigation3Key(BiliPaiNavKey.Live(roomId, title, uname))
+                                    },
+                                    onDynamicDetailClick = { dynamicId ->
+                                        pushNavigation3Key(BiliPaiNavKey.DynamicDetail(dynamicId))
+                                    }
+                                )
+                            }
                         BiliPaiNavEntryContentRole.PROFILE -> {
                             val navigateFromProfile: (String) -> Unit = { route ->
                                 pushNavigation3Route(route)
@@ -1468,8 +1495,8 @@ fun AppNavigation(
                                 ),
                                 onFavoriteClick = { navigateFromProfile(ScreenRoutes.Favorite.route) },
                                 onFavoriteFolderClick = { mediaId, ownerMid, title ->
-                                    pushNavigation3Route(
-                                        ScreenRoutes.SeasonSeriesDetail.createRoute(
+                                    pushNavigation3Key(
+                                        BiliPaiNavKey.SeasonSeriesDetail(
                                             type = "favorite",
                                             id = mediaId,
                                             mid = ownerMid,
@@ -1589,11 +1616,11 @@ fun AppNavigation(
 
                                     val auSid = bgm.musicId.removePrefix("au").toLongOrNull()
                                     if (auSid != null) {
-                                        pushNavigation3Route(ScreenRoutes.MusicDetail.createRoute(auSid))
+                                        pushNavigation3Key(BiliPaiNavKey.MusicDetail(auSid))
                                     } else if (bgm.musicId.startsWith("MA") && videoKey.cid > 0) {
                                         val title = bgm.musicTitle.ifEmpty { "背景音乐" }
-                                        pushNavigation3Route(
-                                            ScreenRoutes.NativeMusic.createRoute(title, videoKey.bvid, videoKey.cid)
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.NativeMusic(title, videoKey.bvid, videoKey.cid)
                                         )
                                     }
                                 }
@@ -1842,8 +1869,8 @@ fun AppNavigation(
                                     scrollToTopChannel = favoriteScrollChannel,
                                     onVideoClick = { bvid, cid, cover -> navigateToVideoInNavigation3(bvid, cid, cover) },
                                     onFavoriteFolderClick = { mediaId, ownerMid, title, ownerName ->
-                                        pushNavigation3Route(
-                                            ScreenRoutes.SeasonSeriesDetail.createRoute(
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.SeasonSeriesDetail(
                                                 type = "favorite",
                                                 id = mediaId,
                                                 mid = ownerMid,
@@ -1853,8 +1880,8 @@ fun AppNavigation(
                                         )
                                     },
                                     onCollectionClick = { collectionId, collectionMid, title, ownerName ->
-                                        pushNavigation3Route(
-                                            ScreenRoutes.SeasonSeriesDetail.createRoute(
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.SeasonSeriesDetail(
                                                 type = "season",
                                                 id = collectionId,
                                                 mid = collectionMid,
@@ -1899,6 +1926,79 @@ fun AppNavigation(
                                     }
                                 )
                             }
+                        BiliPaiNavEntryContentRole.SEASON_SERIES_DETAIL -> {
+                                val seasonSeriesKey = key as BiliPaiNavKey.SeasonSeriesDetail
+                                val viewModel: com.android.purebilibili.feature.space.SeasonSeriesDetailViewModel =
+                                    viewModel()
+                                LaunchedEffect(
+                                    seasonSeriesKey.type,
+                                    seasonSeriesKey.id,
+                                    seasonSeriesKey.ownerName
+                                ) {
+                                    viewModel.init(
+                                        seasonSeriesKey.type,
+                                        seasonSeriesKey.id,
+                                        seasonSeriesKey.mid,
+                                        seasonSeriesKey.title,
+                                        seasonSeriesKey.ownerName
+                                    )
+                                }
+
+                                CommonListScreen(
+                                    viewModel = viewModel,
+                                    onBack = { performSystemBackAction() },
+                                    onVideoClick = { bvid, cid, cover ->
+                                        navigateToVideoInNavigation3(bvid, cid, cover)
+                                    },
+                                    onCollectionClick = { collectionId, collectionMid, collectionTitle, ownerName ->
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.SeasonSeriesDetail(
+                                                type = "season",
+                                                id = collectionId,
+                                                mid = collectionMid,
+                                                title = collectionTitle,
+                                                ownerName = ownerName
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        BiliPaiNavEntryContentRole.BANGUMI -> {
+                                val bangumiKey = key as BiliPaiNavKey.Bangumi
+                                com.android.purebilibili.feature.bangumi.BangumiScreen(
+                                    onBack = { performSystemBackAction() },
+                                    onBangumiClick = { seasonId ->
+                                        pushNavigation3Key(BiliPaiNavKey.BangumiDetail(seasonId = seasonId))
+                                    },
+                                    initialType = bangumiKey.initialType
+                                )
+                            }
+                        BiliPaiNavEntryContentRole.BANGUMI_PLAYER -> {
+                                val playerKey = key as BiliPaiNavKey.BangumiPlayer
+                                com.android.purebilibili.feature.bangumi.BangumiPlayerScreen(
+                                    seasonId = playerKey.seasonId,
+                                    epId = playerKey.epId,
+                                    resumePositionMs = playerKey.resumePositionMs,
+                                    onBack = { performSystemBackAction() },
+                                    onNavigateToLogin = { pushNavigation3Key(BiliPaiNavKey.Login) }
+                                )
+                            }
+                        BiliPaiNavEntryContentRole.MUSIC_DETAIL -> {
+                                val musicKey = key as BiliPaiNavKey.MusicDetail
+                                com.android.purebilibili.feature.audio.screen.MusicDetailScreen(
+                                    sid = musicKey.sid,
+                                    onBack = { performSystemBackAction() }
+                                )
+                            }
+                        BiliPaiNavEntryContentRole.NATIVE_MUSIC -> {
+                                val nativeMusicKey = key as BiliPaiNavKey.NativeMusic
+                                com.android.purebilibili.feature.audio.screen.MusicDetailScreen(
+                                    musicTitle = nativeMusicKey.title.ifEmpty { "背景音乐" },
+                                    bvid = nativeMusicKey.bvid,
+                                    cid = nativeMusicKey.cid,
+                                    onBack = { performSystemBackAction() }
+                                )
+                            }
                         BiliPaiNavEntryContentRole.SPACE -> {
                                 val spaceKey = key as BiliPaiNavKey.Space
                                 com.android.purebilibili.feature.space.SpaceScreen(
@@ -1913,7 +2013,7 @@ fun AppNavigation(
                                         )
                                     },
                                     onAudioClick = { sid ->
-                                        pushNavigation3Route(ScreenRoutes.MusicDetail.createRoute(sid))
+                                        pushNavigation3Key(BiliPaiNavKey.MusicDetail(sid))
                                     },
                                     onBangumiClick = { seasonId ->
                                         if (seasonId > 0L) {
@@ -1955,8 +2055,8 @@ fun AppNavigation(
                                         }
                                     },
                                     onViewAllClick = { type, id, mid, title, ownerName ->
-                                        pushNavigation3Route(
-                                            ScreenRoutes.SeasonSeriesDetail.createRoute(
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.SeasonSeriesDetail(
                                                 type = type,
                                                 id = id,
                                                 mid = mid,
@@ -1997,7 +2097,7 @@ fun AppNavigation(
                                         val auSid = musicId.removePrefix("au").removePrefix("AU").toLongOrNull()
                                         if (auSid != null) {
                                             replaceNavigation3TopWithKey(
-                                                legacyRouteToBiliPaiNavKey(ScreenRoutes.MusicDetail.createRoute(auSid))
+                                                BiliPaiNavKey.MusicDetail(auSid)
                                             )
                                         } else {
                                             navigation3BackStack = popBiliPaiNavKey(navigation3BackStack)
@@ -2075,8 +2175,11 @@ fun AppNavigation(
                                     epId = bangumiKey.epId,
                                     onBack = { performSystemBackAction() },
                                     onEpisodeClick = { actionSeasonId, episode ->
-                                        pushNavigation3Route(
-                                            ScreenRoutes.BangumiPlayer.createRoute(actionSeasonId, episode.id)
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.BangumiPlayer(
+                                                seasonId = actionSeasonId,
+                                                epId = episode.id
+                                            )
                                         )
                                     },
                                     onSeasonClick = { newSeasonId ->

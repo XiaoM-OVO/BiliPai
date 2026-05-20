@@ -4,6 +4,8 @@ internal enum class BiliPaiNavEntryContentRole {
     HOME,
     DYNAMIC,
     SEARCH,
+    SEARCH_TRENDING,
+    TOPIC_DETAIL,
     SETTINGS,
     OPEN_SOURCE_LICENSES,
     APPEARANCE_SETTINGS,
@@ -40,6 +42,11 @@ internal enum class BiliPaiNavEntryContentRole {
     STORY,
     PARTITION,
     CATEGORY,
+    SEASON_SERIES_DETAIL,
+    BANGUMI,
+    BANGUMI_PLAYER,
+    MUSIC_DETAIL,
+    NATIVE_MUSIC,
     SPACE,
     WEB,
     DYNAMIC_DETAIL,
@@ -54,6 +61,8 @@ internal fun resolveBiliPaiNavEntryContentRole(key: BiliPaiNavKey): BiliPaiNavEn
         BiliPaiNavKey.Home -> BiliPaiNavEntryContentRole.HOME
         BiliPaiNavKey.Dynamic -> BiliPaiNavEntryContentRole.DYNAMIC
         BiliPaiNavKey.Search -> BiliPaiNavEntryContentRole.SEARCH
+        BiliPaiNavKey.SearchTrending -> BiliPaiNavEntryContentRole.SEARCH_TRENDING
+        is BiliPaiNavKey.TopicDetail -> BiliPaiNavEntryContentRole.TOPIC_DETAIL
         BiliPaiNavKey.Settings -> BiliPaiNavEntryContentRole.SETTINGS
         BiliPaiNavKey.OpenSourceLicenses -> BiliPaiNavEntryContentRole.OPEN_SOURCE_LICENSES
         BiliPaiNavKey.AppearanceSettings -> BiliPaiNavEntryContentRole.APPEARANCE_SETTINGS
@@ -90,6 +99,11 @@ internal fun resolveBiliPaiNavEntryContentRole(key: BiliPaiNavKey): BiliPaiNavEn
         BiliPaiNavKey.Story -> BiliPaiNavEntryContentRole.STORY
         BiliPaiNavKey.Partition -> BiliPaiNavEntryContentRole.PARTITION
         is BiliPaiNavKey.Category -> BiliPaiNavEntryContentRole.CATEGORY
+        is BiliPaiNavKey.SeasonSeriesDetail -> BiliPaiNavEntryContentRole.SEASON_SERIES_DETAIL
+        is BiliPaiNavKey.Bangumi -> BiliPaiNavEntryContentRole.BANGUMI
+        is BiliPaiNavKey.BangumiPlayer -> BiliPaiNavEntryContentRole.BANGUMI_PLAYER
+        is BiliPaiNavKey.MusicDetail -> BiliPaiNavEntryContentRole.MUSIC_DETAIL
+        is BiliPaiNavKey.NativeMusic -> BiliPaiNavEntryContentRole.NATIVE_MUSIC
         is BiliPaiNavKey.Space -> BiliPaiNavEntryContentRole.SPACE
         is BiliPaiNavKey.Web -> BiliPaiNavEntryContentRole.WEB
         is BiliPaiNavKey.DynamicDetail -> BiliPaiNavEntryContentRole.DYNAMIC_DETAIL

@@ -10,6 +10,8 @@ internal fun BiliPaiNavKey.toLegacyRoute(): String {
         BiliPaiNavKey.Home -> ScreenRoutes.Home.route
         BiliPaiNavKey.Dynamic -> ScreenRoutes.Dynamic.route
         BiliPaiNavKey.Search -> ScreenRoutes.Search.route
+        BiliPaiNavKey.SearchTrending -> ScreenRoutes.SearchTrending.route
+        is BiliPaiNavKey.TopicDetail -> ScreenRoutes.TopicDetail.createRoute(topicId)
         BiliPaiNavKey.Settings -> ScreenRoutes.Settings.route
         BiliPaiNavKey.OpenSourceLicenses -> ScreenRoutes.OpenSourceLicenses.route
         BiliPaiNavKey.AppearanceSettings -> ScreenRoutes.AppearanceSettings.route
@@ -45,6 +47,17 @@ internal fun BiliPaiNavKey.toLegacyRoute(): String {
         BiliPaiNavKey.Partition -> ScreenRoutes.Partition.route
         BiliPaiNavKey.Story -> ScreenRoutes.Story.route
         BiliPaiNavKey.AudioMode -> ScreenRoutes.AudioMode.route
+        is BiliPaiNavKey.SeasonSeriesDetail -> ScreenRoutes.SeasonSeriesDetail.createRoute(
+            type = type,
+            id = id,
+            mid = mid,
+            title = title,
+            ownerName = ownerName
+        )
+        is BiliPaiNavKey.Bangumi -> ScreenRoutes.Bangumi.createRoute(initialType)
+        is BiliPaiNavKey.BangumiPlayer -> ScreenRoutes.BangumiPlayer.createRoute(seasonId, epId, resumePositionMs)
+        is BiliPaiNavKey.MusicDetail -> ScreenRoutes.MusicDetail.createRoute(sid)
+        is BiliPaiNavKey.NativeMusic -> ScreenRoutes.NativeMusic.createRoute(title, bvid, cid)
         is BiliPaiNavKey.VideoDetail -> VideoRoute.createRoute(
             bvid = bvid,
             cid = cid,
@@ -76,6 +89,10 @@ internal fun legacyRouteToBiliPaiNavKey(route: String?): BiliPaiNavKey {
         normalized == ScreenRoutes.Home.route -> BiliPaiNavKey.Home
         normalized == ScreenRoutes.Dynamic.route -> BiliPaiNavKey.Dynamic
         normalized == ScreenRoutes.Search.route -> BiliPaiNavKey.Search
+        normalized == ScreenRoutes.SearchTrending.route -> BiliPaiNavKey.SearchTrending
+        segments.firstOrNull() == "topic" && segments.size >= 2 -> {
+            BiliPaiNavKey.TopicDetail(topicId = segments[1].toLongOrNull() ?: 0L)
+        }
         normalized == ScreenRoutes.Settings.route -> BiliPaiNavKey.Settings
         normalized == ScreenRoutes.OpenSourceLicenses.route -> BiliPaiNavKey.OpenSourceLicenses
         normalized == ScreenRoutes.AppearanceSettings.route -> BiliPaiNavKey.AppearanceSettings
@@ -127,6 +144,35 @@ internal fun legacyRouteToBiliPaiNavKey(route: String?): BiliPaiNavKey {
         normalized == ScreenRoutes.Partition.route -> BiliPaiNavKey.Partition
         normalized == ScreenRoutes.Story.route -> BiliPaiNavKey.Story
         normalized == ScreenRoutes.AudioMode.route -> BiliPaiNavKey.AudioMode
+        segments.firstOrNull() == "season_series_detail" && segments.size >= 3 -> {
+            BiliPaiNavKey.SeasonSeriesDetail(
+                type = decodeRouteValue(segments[1]),
+                id = segments[2].toLongOrNull() ?: 0L,
+                mid = query["mid"]?.toLongOrNull() ?: 0L,
+                title = query["title"].orEmpty(),
+                ownerName = query["ownerName"].orEmpty()
+            )
+        }
+        segments.firstOrNull() == "bangumi" && segments.getOrNull(1) == "play" && segments.size >= 4 -> {
+            BiliPaiNavKey.BangumiPlayer(
+                seasonId = segments[2].toLongOrNull() ?: 0L,
+                epId = segments[3].toLongOrNull() ?: 0L,
+                resumePositionMs = query["resumePositionMs"]?.toLongOrNull() ?: 0L
+            )
+        }
+        routeBase == "bangumi" -> {
+            BiliPaiNavKey.Bangumi(initialType = query["type"]?.toIntOrNull() ?: 1)
+        }
+        segments.firstOrNull() == "music" && segments.size >= 2 -> {
+            BiliPaiNavKey.MusicDetail(sid = segments[1].toLongOrNull() ?: 0L)
+        }
+        routeBase == "native_music" -> {
+            BiliPaiNavKey.NativeMusic(
+                title = query["title"].orEmpty(),
+                bvid = query["bvid"].orEmpty(),
+                cid = query["cid"]?.toLongOrNull() ?: 0L
+            )
+        }
         segments.firstOrNull() == VideoRoute.base && segments.size >= 2 -> {
             BiliPaiNavKey.VideoDetail(
                 bvid = decodeRouteValue(segments[1]),
