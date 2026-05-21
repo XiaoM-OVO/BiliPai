@@ -6,6 +6,9 @@ import com.android.purebilibili.data.model.response.DynamicContentModule
 import com.android.purebilibili.data.model.response.DynamicItem
 import com.android.purebilibili.data.model.response.DynamicMajor
 import com.android.purebilibili.data.model.response.DynamicModules
+import com.android.purebilibili.data.model.response.OpusContentBlock
+import com.android.purebilibili.data.model.response.OpusMajor
+import com.android.purebilibili.data.model.response.OpusPic
 import com.android.purebilibili.data.model.response.UgcSeasonMajor
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -231,5 +234,31 @@ class DynamicCardClickPolicyTest {
 
         assertEquals(1, drawItems.size)
         assertEquals("https://i0.hdslb.com/bfs/article/a.jpg", drawItems.first().src)
+    }
+
+    @Test
+    fun resolveDynamicOpusPresentationBlocks_usesFullBlocksOnlyOnDetailPage() {
+        val opus = OpusMajor(
+            pics = listOf(OpusPic(url = "https://i0.hdslb.com/preview.jpg")),
+            contentBlocks = listOf(
+                OpusContentBlock.Text("完整正文"),
+                OpusContentBlock.Image(OpusPic(url = "https://i0.hdslb.com/full.jpg"))
+            )
+        )
+
+        assertEquals(
+            opus.contentBlocks,
+            resolveDynamicOpusPresentationBlocks(opus = opus, isDetail = true)
+        )
+        assertEquals(
+            emptyList(),
+            resolveDynamicOpusPresentationBlocks(opus = opus, isDetail = false)
+        )
+    }
+
+    @Test
+    fun resolveDynamicOpusPreviewImageLimit_removesNineImageLimitOnDetailPage() {
+        assertEquals(null, resolveDynamicOpusPreviewImageLimit(isDetail = true))
+        assertEquals(9, resolveDynamicOpusPreviewImageLimit(isDetail = false))
     }
 }

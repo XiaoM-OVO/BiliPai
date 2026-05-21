@@ -3,6 +3,7 @@ package com.android.purebilibili.data.model.response
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DynamicModulesFlexibleSerializerTest {
 
@@ -343,5 +344,146 @@ class DynamicModulesFlexibleSerializerTest {
         assertEquals("第一段完整内容\n第二段完整内容", modules?.module_dynamic?.desc?.text)
         assertEquals("完整标题", modules?.module_dynamic?.major?.opus?.title)
         assertEquals("第一段完整内容\n第二段完整内容", modules?.module_dynamic?.major?.opus?.summary?.text)
+    }
+
+    @Test
+    fun dynamicDetailResponse_preservesOrderedOpusParagraphTextAndImagesFromContentModule() {
+        val payload = """
+            {
+              "code": 0,
+              "data": {
+                "item": {
+                  "id_str": "1201902028962398230",
+                  "modules": [
+                    {
+                      "module_dynamic": {
+                        "desc": {
+                          "text": "预览摘要"
+                        },
+                        "major": {
+                          "type": "MAJOR_TYPE_OPUS",
+                          "opus": {
+                            "summary": {
+                              "text": "预览摘要"
+                            },
+                            "pics": [
+                              {
+                                "url": "https://i0.hdslb.com/preview.jpg",
+                                "width": 720,
+                                "height": 480
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "module_type": "MODULE_TYPE_TITLE",
+                      "module_title": {
+                        "text": "完整标题"
+                      }
+                    },
+                    {
+                      "module_type": "MODULE_TYPE_CONTENT",
+                      "module_content": {
+                        "paragraphs": [
+                          {
+                            "para_type": 1,
+                            "text": {
+                              "nodes": [
+                                {
+                                  "type": "TEXT_NODE_TYPE_WORD",
+                                  "word": {
+                                    "words": "第一段正文"
+                                  }
+                                },
+                                {
+                                  "type": "TEXT_NODE_TYPE_RICH",
+                                  "rich": {
+                                    "text": "[表情]",
+                                    "orig_text": "[表情]"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "para_type": 2,
+                            "pic": {
+                              "pics": [
+                                {
+                                  "url": "http://i0.hdslb.com/full-1.jpg",
+                                  "width": 900,
+                                  "height": 1800,
+                                  "size": 1024.5
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "para_type": 1,
+                            "text": {
+                              "nodes": [
+                                {
+                                  "type": "TEXT_NODE_TYPE_WORD",
+                                  "word": {
+                                    "words": "第二段正文"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "para_type": 2,
+                            "pic": {
+                              "pics": [
+                                {
+                                  "url": "https://i0.hdslb.com/full-2.jpg",
+                                  "width": 1000,
+                                  "height": 1000
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+        """.trimIndent()
+
+        val response = json.decodeFromString<DynamicDetailResponse>(payload)
+        val opus = response.data?.item?.modules?.module_dynamic?.major?.opus
+
+        assertEquals("第一段正文[表情]\n第二段正文", opus?.summary?.text)
+        assertTrue((opus?.summary?.text?.length ?: 0) > "预览摘要".length)
+        assertEquals(
+            listOf("https://i0.hdslb.com/full-1.jpg", "https://i0.hdslb.com/full-2.jpg"),
+            opus?.pics?.map { it.url }
+        )
+        assertEquals(
+            listOf(
+                OpusContentBlock.Text("第一段正文[表情]"),
+                OpusContentBlock.Image(
+                    OpusPic(
+                        url = "https://i0.hdslb.com/full-1.jpg",
+                        width = 900,
+                        height = 1800,
+                        size = 1024.5
+                    )
+                ),
+                OpusContentBlock.Text("第二段正文"),
+                OpusContentBlock.Image(
+                    OpusPic(
+                        url = "https://i0.hdslb.com/full-2.jpg",
+                        width = 1000,
+                        height = 1000
+                    )
+                )
+            ),
+            opus?.contentBlocks
+        )
     }
 }

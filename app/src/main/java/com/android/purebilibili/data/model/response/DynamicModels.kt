@@ -3,6 +3,7 @@ package com.android.purebilibili.data.model.response
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -151,8 +152,7 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
             is JsonArray -> {
                 var merged = DynamicModules()
                 var opusTitle: String? = null
-                val opusParagraphTexts = mutableListOf<String>()
-                val opusPics = mutableListOf<OpusPic>()
+                val opusContentBlocks = mutableListOf<OpusContentBlock>()
                 element.forEach { node ->
                     val obj = node as? JsonObject ?: return@forEach
                     val parsed = jsonDecoder.json.decodeFromJsonElement(DynamicModules.serializer(), obj)
@@ -170,15 +170,13 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
                         val paragraphs = obj["module_content"]?.jsonObject?.get("paragraphs") as? JsonArray
                         paragraphs?.forEach { paragraphNode ->
                             val paragraph = paragraphNode as? JsonObject ?: return@forEach
-                            extractParagraphText(paragraph)?.let { opusParagraphTexts += it }
-                            opusPics += extractParagraphPics(paragraph)
+                            opusContentBlocks += extractParagraphBlocks(paragraph)
                         }
                     }
                 }
                 merged.normalizeWithOpusModules(
                     title = opusTitle,
-                    paragraphTexts = opusParagraphTexts,
-                    pics = opusPics
+                    contentBlocks = opusContentBlocks
                 )
             }
             else -> DynamicModules()
@@ -189,16 +187,35 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
         DynamicModules.serializer().serialize(encoder, value)
     }
 
+    private fun extractParagraphBlocks(paragraph: JsonObject): List<OpusContentBlock> {
+        val blocks = mutableListOf<OpusContentBlock>()
+        extractParagraphText(paragraph)?.let { blocks += OpusContentBlock.Text(it) }
+        extractParagraphPics(paragraph).forEach { pic ->
+            blocks += OpusContentBlock.Image(pic)
+        }
+        return blocks
+    }
+
     private fun extractParagraphText(paragraph: JsonObject): String? {
         val nodes = paragraph["text"]?.jsonObject?.get("nodes") as? JsonArray ?: return null
         val text = buildString {
             nodes.forEach { node ->
-                val words = (node as? JsonObject)
-                    ?.get("word")
+                val nodeObject = node as? JsonObject ?: return@forEach
+                val words = nodeObject["word"]
                     ?.jsonObject
                     ?.get("words")
                     ?.jsonPrimitive
                     ?.contentOrNull
+                    ?: nodeObject["rich"]
+                        ?.jsonObject
+                        ?.get("text")
+                        ?.jsonPrimitive
+                        ?.contentOrNull
+                    ?: nodeObject["rich"]
+                        ?.jsonObject
+                        ?.get("orig_text")
+                        ?.jsonPrimitive
+                        ?.contentOrNull
                     ?: return@forEach
                 append(words)
             }
@@ -213,7 +230,7 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
             val url = pic["url"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
             if (url.isEmpty()) return@mapNotNull null
             OpusPic(
-                url = url,
+                url = normalizeOpusImageUrl(url),
                 width = pic["width"]?.jsonPrimitive?.intOrNull ?: 0,
                 height = pic["height"]?.jsonPrimitive?.intOrNull ?: 0,
                 size = pic["size"]?.jsonPrimitive?.doubleOrNull ?: 0.0
@@ -223,10 +240,15 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
 
     private fun DynamicModules.normalizeWithOpusModules(
         title: String?,
-        paragraphTexts: List<String>,
-        pics: List<OpusPic>
+        contentBlocks: List<OpusContentBlock>
     ): DynamicModules {
         val existing = module_dynamic
+        val paragraphTexts = contentBlocks.mapNotNull { block ->
+            (block as? OpusContentBlock.Text)?.text
+        }
+        val pics = contentBlocks.mapNotNull { block ->
+            (block as? OpusContentBlock.Image)?.pic
+        }
         val descText = paragraphTexts.joinToString(separator = "\n").trim()
         val cleanTitle = title?.trim().takeUnless { it.isNullOrBlank() }
         val hasDerivedContent = descText.isNotBlank() || pics.isNotEmpty() || cleanTitle != null
@@ -263,7 +285,8 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
                 existingOpus?.summary != null -> existingOpus.summary
                 else -> null
             },
-            pics = if (pics.isNotEmpty()) pics else existingOpus?.pics.orEmpty()
+            pics = if (pics.isNotEmpty()) pics else existingOpus?.pics.orEmpty(),
+            contentBlocks = if (contentBlocks.isNotEmpty()) contentBlocks else existingOpus?.contentBlocks.orEmpty()
         )
         val mergedMajor = DynamicMajor(
             type = "MAJOR_TYPE_OPUS",
@@ -284,6 +307,14 @@ object DynamicModulesFlexibleSerializer : KSerializer<DynamicModules> {
                 }
             )
         )
+    }
+
+    private fun normalizeOpusImageUrl(rawUrl: String): String {
+        return when {
+            rawUrl.startsWith("//") -> "https:$rawUrl"
+            rawUrl.startsWith("http://") -> rawUrl.replaceFirst("http://", "https://")
+            else -> rawUrl
+        }
     }
 }
 
@@ -383,8 +414,15 @@ data class OpusMajor(
     val jump_url: String = "",
     val pics: List<OpusPic> = emptyList(), // 图片列表
     val summary: OpusSummary? = null, // 文字摘要
-    val title: String? = null // 标题 (可选)
+    val title: String? = null, // 标题 (可选)
+    @Transient
+    val contentBlocks: List<OpusContentBlock> = emptyList()
 )
+
+sealed interface OpusContentBlock {
+    data class Text(val text: String) : OpusContentBlock
+    data class Image(val pic: OpusPic) : OpusContentBlock
+}
 
 @Serializable
 data class OpusPic(

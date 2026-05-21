@@ -43,12 +43,14 @@ import com.android.purebilibili.core.ui.rememberAppMoreIcon
 import com.android.purebilibili.core.ui.rememberAppVisibilityOffIcon
 import com.android.purebilibili.data.model.response.DynamicDesc
 import com.android.purebilibili.data.model.response.DynamicItem
+import com.android.purebilibili.data.model.response.DrawItem
 import com.android.purebilibili.feature.dynamic.resolveDynamicActionButtonSlotWeight
 import com.android.purebilibili.feature.dynamic.resolveDynamicActionButtonSpacing
 import com.android.purebilibili.feature.dynamic.resolveDynamicCardContentPadding
 import com.android.purebilibili.feature.dynamic.resolveDynamicCardOuterPadding
 import com.android.purebilibili.data.model.response.DynamicStatModule
 import com.android.purebilibili.data.model.response.DynamicType
+import com.android.purebilibili.data.model.response.OpusContentBlock
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -83,6 +85,10 @@ fun DynamicCardV2(
     val visibleDynamicDesc = content?.desc?.let { desc ->
         resolveDynamicDescForImages(desc, hasImages = contentHasImages)
     }
+    val fullOpusContentBlocks = content?.major?.opus?.let { opus ->
+        resolveDynamicOpusPresentationBlocks(opus = opus, isDetail = isDetail)
+    }.orEmpty()
+    val hasFullOpusDetailContent = fullOpusContentBlocks.isNotEmpty()
     val type = DynamicType.fromApiValue(item.type)
     val cardClickAction = remember(item) { resolveDynamicCardPrimaryAction(item) }
     val watchLaterAid = remember(item) { resolveDynamicWatchLaterAid(item) }
@@ -245,7 +251,7 @@ fun DynamicCardV2(
         }
         
         //  动态内容文字（支持@高亮）
-        visibleDynamicDesc?.let { desc ->
+        if (!hasFullOpusDetailContent) visibleDynamicDesc?.let { desc ->
             if (shouldRenderDynamicRichText(desc)) {
                 RichTextContent(
                     desc = desc,
@@ -375,9 +381,65 @@ fun DynamicCardV2(
             }
             
             // 显示图片 (转换为 DrawItem 格式复用现有组件)
-            if (opus.pics.isNotEmpty()) {
+            if (fullOpusContentBlocks.isNotEmpty()) {
+                val previewImages = remember(opus.pics) { opus.pics.map { it.url } }
+                var fullContentSelectedImageIndex by remember { mutableIntStateOf(-1) }
+                var fullContentImageIndex = 0
+                fullOpusContentBlocks.forEach { block ->
+                    when (block) {
+                        is OpusContentBlock.Text -> {
+                            Text(
+                                text = block.text,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
+                        is OpusContentBlock.Image -> {
+                            val currentImageIndex = fullContentImageIndex
+                            fullContentImageIndex += 1
+                            val aspectRatio = remember(block.pic.width, block.pic.height) {
+                                if (block.pic.width > 0 && block.pic.height > 0) {
+                                    block.pic.width.toFloat() / block.pic.height.toFloat()
+                                } else {
+                                    null
+                                }
+                            }
+                            AsyncImage(
+                                model = block.pic.url,
+                                contentDescription = opus.title.orEmpty(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (aspectRatio != null) {
+                                            Modifier.aspectRatio(aspectRatio)
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable(enabled = currentImageIndex in previewImages.indices) {
+                                        fullContentSelectedImageIndex = currentImageIndex
+                                    },
+                                contentScale = ContentScale.FillWidth
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
+                }
+
+                if (fullContentSelectedImageIndex >= 0) {
+                    ImagePreviewDialog(
+                        images = previewImages,
+                        initialIndex = fullContentSelectedImageIndex,
+                        textContent = opusPreviewText,
+                        defaultTextVisible = dynamicPreviewTextVisible,
+                        onDismiss = { fullContentSelectedImageIndex = -1 }
+                    )
+                }
+            } else if (opus.pics.isNotEmpty()) {
                 val drawItems = opus.pics.map { pic ->
-                    com.android.purebilibili.data.model.response.DrawItem(
+                    DrawItem(
                         src = pic.url,
                         width = pic.width,
                         height = pic.height
@@ -386,7 +448,7 @@ fun DynamicCardV2(
                 DrawGridV2(
                     items = drawItems,
                     gifImageLoader = gifImageLoader,
-                    maxDisplayImages = if (isDetail) null else 9,
+                    maxDisplayImages = resolveDynamicOpusPreviewImageLimit(isDetail),
                     onImageClick = { index, rect ->
                         val action = resolveDynamicCardMediaAction(item, index)
                         if (action is DynamicCardMediaAction.PreviewImages) {

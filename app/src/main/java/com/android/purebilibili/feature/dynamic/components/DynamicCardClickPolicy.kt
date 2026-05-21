@@ -8,6 +8,8 @@ import com.android.purebilibili.data.model.response.ArticleMajor
 import com.android.purebilibili.data.model.response.DrawItem
 import com.android.purebilibili.data.model.response.DynamicItem
 import com.android.purebilibili.data.model.response.LiveRcmdMajor
+import com.android.purebilibili.data.model.response.OpusContentBlock
+import com.android.purebilibili.data.model.response.OpusMajor
 import com.android.purebilibili.data.model.response.UgcSeasonMajor
 import com.android.purebilibili.feature.dynamic.model.LiveContentInfo
 import kotlinx.serialization.json.Json
@@ -122,6 +124,17 @@ internal fun resolveArticleCoverDrawItems(article: ArticleMajor): List<DrawItem>
     return resolveArticleCoverUrls(article).map { cover ->
         DrawItem(src = cover)
     }
+}
+
+internal fun resolveDynamicOpusPresentationBlocks(
+    opus: OpusMajor,
+    isDetail: Boolean
+): List<OpusContentBlock> {
+    return if (isDetail) opus.contentBlocks else emptyList()
+}
+
+internal fun resolveDynamicOpusPreviewImageLimit(isDetail: Boolean): Int? {
+    return if (isDetail) null else 9
 }
 
 internal fun resolveDynamicCardPrimaryAction(item: DynamicItem): DynamicCardPrimaryAction {
