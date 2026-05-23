@@ -60,6 +60,8 @@ import com.android.purebilibili.data.model.response.ReplyUpAction
 import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextContent
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextPlacement
+import com.android.purebilibili.feature.dynamic.components.ImagePreviewCommentContext
+import com.android.purebilibili.feature.dynamic.components.resolveCommentImageOriginalSizeLabel
 import androidx.compose.ui.layout.ContentScale
 import com.android.purebilibili.core.ui.common.CopySelectionDialog
 import com.android.purebilibili.core.ui.common.copyOnLongPress
@@ -823,11 +825,31 @@ internal fun resolveFanGroupVisualFromMemberAndSailing(
     )
 }
 
-internal fun resolveReplyPreviewTextContent(item: ReplyItem): ImagePreviewTextContent {
+internal fun resolveReplyPreviewTextContent(
+    item: ReplyItem,
+    isLiked: Boolean = item.action == 1,
+    onLikeClick: (() -> Unit)? = null,
+    onReplyClick: (() -> Unit)? = null
+): ImagePreviewTextContent {
+    val originalSizeLabels = item.content.pictures.orEmpty().map { picture ->
+        resolveCommentImageOriginalSizeLabel(picture.imgSize.takeIf { it > 0f })
+    }
     return ImagePreviewTextContent(
         headline = item.member.uname,
         body = item.content.message,
-        placement = ImagePreviewTextPlacement.TOP_BAR
+        placement = ImagePreviewTextPlacement.TOP_BAR,
+        commentContext = ImagePreviewCommentContext(
+            replyId = item.rpid,
+            authorName = item.member.uname,
+            avatarUrl = item.member.avatar,
+            timeText = formatTime(item.ctime),
+            body = item.content.message,
+            originalSizeLabels = originalSizeLabels,
+            likeCount = item.like,
+            liked = isLiked,
+            onLikeClick = onLikeClick,
+            onReplyClick = onReplyClick
+        )
     )
 }
 
@@ -1230,7 +1252,12 @@ fun ReplyItemView(
                                     images,
                                     index,
                                     rect,
-                                    resolveReplyPreviewTextContent(item)
+                                    resolveReplyPreviewTextContent(
+                                        item = item,
+                                        isLiked = isLiked,
+                                        onLikeClick = onLikeClick,
+                                        onReplyClick = onReplyClick
+                                    )
                                 )
                             }
                         )

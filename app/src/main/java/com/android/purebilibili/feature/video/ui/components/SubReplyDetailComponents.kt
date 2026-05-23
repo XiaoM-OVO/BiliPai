@@ -903,7 +903,12 @@ private fun SubReplyDetailItem(
                                     images,
                                     index,
                                     rect,
-                                    resolveReplyPreviewTextContent(item)
+                                    resolveReplyPreviewTextContent(
+                                        item = item,
+                                        isLiked = isLiked,
+                                        onLikeClick = onLikeClick,
+                                        onReplyClick = onReplyClick
+                                    )
                                 )
                             },
                             testTagPrefix = "$SUB_REPLY_DETAIL_IMAGE_TAG_PREFIX${item.rpid}_"
