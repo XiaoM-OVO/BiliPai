@@ -1254,7 +1254,7 @@ private fun PlaybackFullscreenGestureSettingsSection(
     val scope = rememberCoroutineScope()
     val portraitPlayerCollapseMode by com.android.purebilibili.core.store.SettingsManager
         .getPortraitPlayerCollapseMode(context)
-        .collectAsState(initial = PortraitPlayerCollapseMode.OFF)
+        .collectAsState(initial = PortraitPlayerCollapseMode.INTRO_ONLY)
     val portraitSwipeToFullscreenEnabled by com.android.purebilibili.core.store.SettingsManager
         .getPortraitSwipeToFullscreenEnabled(context).collectAsState(initial = true)
     val centerSwipeToFullscreenEnabled by com.android.purebilibili.core.store.SettingsManager

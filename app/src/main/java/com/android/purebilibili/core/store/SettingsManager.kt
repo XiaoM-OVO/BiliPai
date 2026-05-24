@@ -4358,14 +4358,29 @@ object SettingsManager {
     private const val CACHE_KEY_COMMENT_COLLAPSED_REPLY_PREVIEW_LIMIT = "comment_collapsed_reply_preview_limit"
 
     fun normalizeCommentCollapsedReplyPreviewLimit(value: Int): Int = value.coerceIn(1, 10)
+
+    internal fun resolvePortraitPlayerCollapseModePreference(
+        rawMode: Int?,
+        legacySwipeHide: Boolean?
+    ): PortraitPlayerCollapseMode {
+        return rawMode?.let(PortraitPlayerCollapseMode::fromValue)
+            ?: legacySwipeHide?.let(PortraitPlayerCollapseMode::fromLegacySwipeHide)
+            ?: PortraitPlayerCollapseMode.INTRO_ONLY
+    }
+
+    internal fun resolveSwipeHidePlayerEnabledPreference(
+        rawMode: Int?,
+        legacySwipeHide: Boolean?
+    ): Boolean {
+        return resolvePortraitPlayerCollapseModePreference(rawMode, legacySwipeHide) != PortraitPlayerCollapseMode.OFF
+    }
     
     // --- 播放器滚动缩小方向策略 ---
     fun getPortraitPlayerCollapseMode(context: Context): Flow<PortraitPlayerCollapseMode> =
         context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_PORTRAIT_PLAYER_COLLAPSE_MODE]?.let { raw ->
-                PortraitPlayerCollapseMode.fromValue(raw)
-            } ?: PortraitPlayerCollapseMode.fromLegacySwipeHide(
-                preferences[KEY_SWIPE_HIDE_PLAYER] ?: false
+            resolvePortraitPlayerCollapseModePreference(
+                rawMode = preferences[KEY_PORTRAIT_PLAYER_COLLAPSE_MODE],
+                legacySwipeHide = preferences[KEY_SWIPE_HIDE_PLAYER]
             )
         }
 
@@ -4382,10 +4397,11 @@ object SettingsManager {
     // --- 上滑隐藏播放器开关 ---
     fun getSwipeHidePlayerEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences ->
-            preferences[KEY_PORTRAIT_PLAYER_COLLAPSE_MODE]?.let { raw ->
-                PortraitPlayerCollapseMode.fromValue(raw) != PortraitPlayerCollapseMode.OFF
-            } ?: (preferences[KEY_SWIPE_HIDE_PLAYER] ?: false)
-        }  // 默认关闭
+            resolveSwipeHidePlayerEnabledPreference(
+                rawMode = preferences[KEY_PORTRAIT_PLAYER_COLLAPSE_MODE],
+                legacySwipeHide = preferences[KEY_SWIPE_HIDE_PLAYER]
+            )
+        }
 
     suspend fun setSwipeHidePlayerEnabled(context: Context, value: Boolean) {
         context.settingsDataStore.edit { preferences ->
