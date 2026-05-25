@@ -92,7 +92,9 @@ import com.android.purebilibili.feature.video.usecase.playPlayerFromUserAction
 import com.android.purebilibili.feature.video.usecase.seekPlayerFromUserAction
 import com.android.purebilibili.feature.cast.DeviceListDialog
 import com.android.purebilibili.feature.cast.DlnaManager
+import com.android.purebilibili.core.plugin.CastPluginApi
 import com.android.purebilibili.core.plugin.CastPluginMediaRequest
+import com.android.purebilibili.core.plugin.CastPluginPlaybackState
 import com.android.purebilibili.feature.cast.LocalProxyServer
 import com.android.purebilibili.feature.cast.SsdpCastClient
 import androidx.compose.animation.core.LinearEasing
@@ -153,6 +155,26 @@ internal fun shouldConsumeBackgroundGesturesForEndDrawer(
 }
 
 internal fun shouldDismissCastDialogOnUrlFailure(castUrl: String?): Boolean = castUrl.isNullOrBlank()
+
+internal fun resolveEffectivePlayerProgress(
+    localProgress: PlayerProgress,
+    pluginState: CastPluginPlaybackState?
+): PlayerProgress {
+    if (pluginState?.isActive != true) return localProgress
+    return PlayerProgress(
+        current = pluginState.currentPositionMs,
+        duration = pluginState.durationMs,
+        buffered = pluginState.bufferedPositionMs
+    )
+}
+
+internal fun resolveEffectivePlayingState(
+    localIsPlaying: Boolean,
+    pluginState: CastPluginPlaybackState?
+): Boolean {
+    if (pluginState?.isActive != true) return localIsPlaying
+    return pluginState.isPlaying
+}
 
 internal fun shouldReleaseCastBindingAfterDialogVisibilityChange(
     previousVisible: Boolean,
@@ -473,6 +495,15 @@ fun VideoPlayerOverlay(
     var showVideoSettings by remember { mutableStateOf(false) }  //  新增
     var showChapterList by remember { mutableStateOf(false) }  // 📖 章节列表
     var showCastDialog by remember { mutableStateOf(false) }   // 📺 投屏对话框
+    var activeCastPlugin by remember { mutableStateOf<CastPluginApi?>(null) }
+    val pluginPlaybackState by produceState(CastPluginPlaybackState(), activeCastPlugin) {
+        val plugin = activeCastPlugin
+        if (plugin != null) {
+            plugin.playbackState.collect { value = it }
+        } else {
+            value = CastPluginPlaybackState()
+        }
+    }
     var showPlaybackOrderSheet by remember { mutableStateOf(false) }
     var showPageSelectorSheet by remember { mutableStateOf(false) }
     var currentSpeed by remember(player) { mutableFloatStateOf(player.playbackParameters.speed) }
@@ -834,14 +865,20 @@ fun VideoPlayerOverlay(
             delay(delayMs)
         }
     }
+    val effectiveProgressState = remember(progressState, pluginPlaybackState) {
+        resolveEffectivePlayerProgress(progressState, pluginPlaybackState)
+    }
     val displayedProgressState = remember(
-        progressState,
+        effectiveProgressState,
         progressDisplayOverridePositionMs
     ) {
         resolveDisplayedPlayerProgressWithOverride(
-            progress = progressState,
+            progress = effectiveProgressState,
             overridePositionMs = progressDisplayOverridePositionMs
         )
+    }
+    val effectiveIsPlaying = remember(isPlaying, pluginPlaybackState) {
+        resolveEffectivePlayingState(isPlaying, pluginPlaybackState)
     }
     val centerLoadingUiState = remember(
         isBuffering,
@@ -872,16 +909,16 @@ fun VideoPlayerOverlay(
     }
 
     // 📖 计算当前章节（必须在 progressState 之后定义）
-    val currentChapter = remember(progressState.current, viewPoints) {
+    val currentChapter = remember(effectiveProgressState.current, viewPoints) {
         if (viewPoints.isEmpty()) null
-        else viewPoints.lastOrNull { progressState.current >= it.fromMs }?.content
+        else viewPoints.lastOrNull { effectiveProgressState.current >= it.fromMs }?.content
     }
 
-    LaunchedEffect(isVisible, isPlaying, isSeekScrubbing) {
+    LaunchedEffect(isVisible, effectiveIsPlaying, isSeekScrubbing) {
         if (
             shouldAutoHideInlineControlsAfterDelay(
                 controlsVisible = isVisible,
-                isPlaying = isPlaying,
+                isPlaying = effectiveIsPlaying,
                 isSeekScrubbing = isSeekScrubbing
             )
         ) {
@@ -889,7 +926,7 @@ fun VideoPlayerOverlay(
             if (
                 shouldAutoHideInlineControlsAfterDelay(
                     controlsVisible = isVisible,
-                    isPlaying = isPlaying,
+                    isPlaying = effectiveIsPlaying,
                     isSeekScrubbing = isSeekScrubbing
                 )
             ) {
@@ -956,6 +993,17 @@ fun VideoPlayerOverlay(
     }
 
     fun togglePlayPause() {
+        val plugin = activeCastPlugin
+        if (plugin != null && pluginPlaybackState.isActive) {
+            scope.launch {
+                if (pluginPlaybackState.isPlaying) {
+                    plugin.pause()
+                } else {
+                    plugin.play()
+                }
+            }
+            return
+        }
         if (player.playbackState == Player.STATE_ENDED) {
             onSeekTo?.invoke(0L) ?: player.seekTo(0L)
             playPlayerFromUserAction(player)
@@ -970,8 +1018,13 @@ fun VideoPlayerOverlay(
     }
 
     val commitSeek: (Long) -> Unit = { position ->
-        val safePosition = position.coerceAtLeast(0L)
-        onSeekTo?.invoke(safePosition) ?: seekPlayerFromUserAction(player, safePosition)
+        val plugin = activeCastPlugin
+        if (plugin != null && pluginPlaybackState.isActive) {
+            scope.launch { plugin.seek(position.coerceAtLeast(0L)) }
+        } else {
+            val safePosition = position.coerceAtLeast(0L)
+            onSeekTo?.invoke(safePosition) ?: seekPlayerFromUserAction(player, safePosition)
+        }
     }
 
     Box(
@@ -1101,7 +1154,7 @@ fun VideoPlayerOverlay(
                 
                 //  [修复] 底部控制栏 - 固定在底部
                 BottomControlBar(
-                    isPlaying = isPlaying,
+                    isPlaying = effectiveIsPlaying,
                     progress = displayedProgressState,
                     isFullscreen = isFullscreen,
                     currentSpeed = currentSpeed,
@@ -1374,7 +1427,7 @@ fun VideoPlayerOverlay(
         AnimatedVisibility(
             visible = shouldShowCenterPlayButton(
                 isVisible = isVisible,
-                isPlaying = isPlaying,
+                isPlaying = effectiveIsPlaying,
                 isQualitySwitching = isQualitySwitching,
                 isFullscreen = isFullscreen,
                 isBuffering = isBuffering,
@@ -1863,6 +1916,10 @@ fun VideoPlayerOverlay(
                         )
                         val result = plugin.cast(context, route, mediaRequest)
                         showCastDialog = false
+                        if (result.isSuccess) {
+                            player.pause()
+                            activeCastPlugin = plugin
+                        }
                         val message = if (result.isSuccess) {
                             "已发送投屏指令"
                         } else {

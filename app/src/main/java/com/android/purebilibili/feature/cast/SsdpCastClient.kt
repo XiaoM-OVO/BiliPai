@@ -102,9 +102,12 @@ object SsdpCastClient {
         return runCatching {
             val factory = DocumentBuilderFactory.newInstance().apply {
                 isNamespaceAware = true
-                setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
                 setFeature("http://xml.org/sax/features/external-general-entities", false)
                 setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+                setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+                runCatching { setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true) }
+                isXIncludeAware = false
+                isExpandEntityReferences = false
             }
             val builder = factory.newDocumentBuilder()
             val document = builder.parse(descriptionXml.byteInputStream())
@@ -134,7 +137,7 @@ object SsdpCastClient {
                 avTransportEndpoint = endpoint
             )
         }.getOrElse { error ->
-            Logger.e(TAG, "📺 [SSDP] Parse description failed: ${error.message}")
+            Logger.w(TAG, "📺 [SSDP] Parse description failed: ${error.message}")
             null
         }
     }

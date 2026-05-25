@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.android.purebilibili.core.plugin.CastPluginApi
 import com.android.purebilibili.core.plugin.CastPluginMediaRequest
+import com.android.purebilibili.core.plugin.CastPluginPlaybackState
 import com.android.purebilibili.core.plugin.CastPluginRoute
 import com.android.purebilibili.core.plugin.PluginCapability
 import com.android.purebilibili.core.plugin.PluginCapabilityManifest
 import com.android.purebilibili.core.util.Logger
+import com.google.android.gms.cast.framework.CastContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +40,7 @@ class GoogleCastPlugin : CastPluginApi {
     )
 
     override val routes: StateFlow<List<CastPluginRoute>> = GoogleCastRouteManager.routes
+    override val playbackState: StateFlow<CastPluginPlaybackState> = GoogleCastPlaybackController.playbackState
 
     override fun startRouteDiscovery(context: Context) {
         GoogleCastRouteManager.startDiscovery(context)
@@ -52,7 +55,7 @@ class GoogleCastPlugin : CastPluginApi {
         route: CastPluginRoute,
         media: CastPluginMediaRequest
     ): Result<Unit> {
-        return GoogleCastMediaLoader.loadMedia(
+        val result = GoogleCastMediaLoader.loadMedia(
             context = context,
             routeId = route.routeId,
             url = media.url,
@@ -60,13 +63,31 @@ class GoogleCastPlugin : CastPluginApi {
             creator = media.creator,
             contentType = media.contentType
         )
+        if (result.isSuccess) {
+            val session = CastContext.getSharedInstance(context).sessionManager.currentCastSession
+            if (session != null) {
+                GoogleCastPlaybackController.attach(
+                    session = session,
+                    title = media.title,
+                    deviceLabel = route.name
+                )
+            }
+        }
+        return result
     }
+
+    override suspend fun play(): Result<Unit> = GoogleCastPlaybackController.play()
+
+    override suspend fun pause(): Result<Unit> = GoogleCastPlaybackController.pause()
+
+    override suspend fun seek(positionMs: Long): Result<Unit> = GoogleCastPlaybackController.seek(positionMs)
 
     override suspend fun onEnable() {
         Logger.d(TAG, "Google Cast plugin enabled")
     }
 
     override suspend fun onDisable() {
+        GoogleCastPlaybackController.detach()
         GoogleCastRouteManager.stopDiscovery()
         Logger.d(TAG, "Google Cast plugin disabled")
     }

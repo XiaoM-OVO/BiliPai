@@ -2,7 +2,9 @@ package com.android.purebilibili.core.plugin
 
 import android.content.Context
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 data class CastPluginRoute(
     val routeId: String,
@@ -18,8 +20,26 @@ data class CastPluginMediaRequest(
     val contentType: String = "video/mp4"
 )
 
+data class CastPluginPlaybackState(
+    val isActive: Boolean = false,
+    val deviceLabel: String = "",
+    val title: String = "",
+    val isPlaying: Boolean = false,
+    val isBuffering: Boolean = false,
+    val currentPositionMs: Long = 0L,
+    val durationMs: Long = 0L,
+    val bufferedPositionMs: Long = 0L,
+    val canSeek: Boolean = true
+)
+
+private val defaultPlaybackState: StateFlow<CastPluginPlaybackState> =
+    MutableStateFlow(CastPluginPlaybackState()).asStateFlow()
+
 interface CastPluginApi : Plugin {
     val routes: StateFlow<List<CastPluginRoute>>
+    val playbackState: StateFlow<CastPluginPlaybackState>
+        get() = defaultPlaybackState
+
     fun startRouteDiscovery(context: Context)
     fun stopRouteDiscovery()
     suspend fun cast(
@@ -27,4 +47,13 @@ interface CastPluginApi : Plugin {
         route: CastPluginRoute,
         media: CastPluginMediaRequest
     ): Result<Unit>
+
+    suspend fun play(): Result<Unit> =
+        Result.failure(UnsupportedOperationException("播放控制不支持"))
+
+    suspend fun pause(): Result<Unit> =
+        Result.failure(UnsupportedOperationException("暂停控制不支持"))
+
+    suspend fun seek(positionMs: Long): Result<Unit> =
+        Result.failure(UnsupportedOperationException("进度控制不支持"))
 }

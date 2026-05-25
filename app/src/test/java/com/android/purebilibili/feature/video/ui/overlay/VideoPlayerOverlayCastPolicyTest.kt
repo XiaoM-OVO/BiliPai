@@ -1,10 +1,14 @@
 package com.android.purebilibili.feature.video.ui.overlay
 
+import com.android.purebilibili.core.plugin.CastPluginPlaybackState
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class VideoPlayerOverlayCastPolicyTest {
+
+    // --- cast binding lifecycle ---
 
     @Test
     fun releasesCastBindingWhenDialogCloses() {
@@ -20,20 +24,17 @@ class VideoPlayerOverlayCastPolicyTest {
 
     @Test
     fun shouldDismissCastDialogImmediatelyOnUrlFailure() {
-        // URL is null → dismiss before cast attempt
         assertTrue(shouldDismissCastDialogOnUrlFailure(null))
     }
 
     @Test
     fun shouldDismissCastDialogImmediatelyOnBlankUrl() {
-        // blank URL counts as failure → dismiss
         assertTrue(shouldDismissCastDialogOnUrlFailure(""))
         assertTrue(shouldDismissCastDialogOnUrlFailure("   "))
     }
 
     @Test
     fun shouldNotDismissCastDialogWhenUrlResolved() {
-        // URL is resolved → keep dialog open for plugin.cast to use the route
         assertFalse(shouldDismissCastDialogOnUrlFailure("https://example.com/video.mp4"))
         assertFalse(shouldDismissCastDialogOnUrlFailure("http://127.0.0.1:8901/proxy"))
     }
@@ -58,5 +59,58 @@ class VideoPlayerOverlayCastPolicyTest {
                 currentVisible = true
             )
         )
+    }
+
+    // --- effective progress resolution with plugin state ---
+
+    @Test
+    fun effectiveProgressUsesLocalWhenPluginIsNull() {
+        val local = PlayerProgress(current = 5000L, duration = 30000L, buffered = 10000L)
+        val result = resolveEffectivePlayerProgress(local, null)
+        assertEquals(local, result)
+    }
+
+    @Test
+    fun effectiveProgressUsesLocalWhenPluginInactive() {
+        val local = PlayerProgress(current = 5000L, duration = 30000L, buffered = 10000L)
+        val inactive = CastPluginPlaybackState(isActive = false)
+        val result = resolveEffectivePlayerProgress(local, inactive)
+        assertEquals(local, result)
+    }
+
+    @Test
+    fun effectiveProgressUsesPluginWhenActive() {
+        val local = PlayerProgress(current = 5000L, duration = 30000L, buffered = 10000L)
+        val active = CastPluginPlaybackState(
+            isActive = true,
+            currentPositionMs = 15000L,
+            durationMs = 60000L,
+            bufferedPositionMs = 20000L
+        )
+        val result = resolveEffectivePlayerProgress(local, active)
+        assertEquals(15000L, result.current)
+        assertEquals(60000L, result.duration)
+        assertEquals(20000L, result.buffered)
+    }
+
+    // --- effective playing state resolution ---
+
+    @Test
+    fun effectivePlayingUsesLocalWhenPluginNull() {
+        assertTrue(resolveEffectivePlayingState(localIsPlaying = true, pluginState = null))
+        assertFalse(resolveEffectivePlayingState(localIsPlaying = false, pluginState = null))
+    }
+
+    @Test
+    fun effectivePlayingUsesLocalWhenPluginInactive() {
+        val inactive = CastPluginPlaybackState(isActive = false, isPlaying = true)
+        assertTrue(resolveEffectivePlayingState(localIsPlaying = true, pluginState = inactive))
+        assertFalse(resolveEffectivePlayingState(localIsPlaying = false, pluginState = inactive))
+    }
+
+    @Test
+    fun effectivePlayingUsesPluginWhenActive() {
+        val active = CastPluginPlaybackState(isActive = true, isPlaying = false)
+        assertFalse(resolveEffectivePlayingState(localIsPlaying = true, pluginState = active))
     }
 }

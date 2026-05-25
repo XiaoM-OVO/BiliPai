@@ -17,7 +17,7 @@ internal object GoogleCastMediaLoader {
 
     private const val DEFAULT_CONTENT_TYPE = "video/mp4"
     private const val FALLBACK_TITLE = "BiliPai Video"
-    private const val SESSION_TIMEOUT_MS = 5_000L
+    private const val SESSION_TIMEOUT_MS = 10_000L
     private const val SESSION_POLL_INTERVAL_MS = 100L
 
     internal fun resolveGoogleCastMediaMetadata(title: String, creator: String): GoogleCastMediaMetadataPolicy {
@@ -25,6 +25,15 @@ internal object GoogleCastMediaLoader {
             title = title.ifBlank { FALLBACK_TITLE },
             subtitle = if (creator.isNotBlank()) creator else null
         )
+    }
+
+    internal fun shouldContinueWaitingForSession(
+        sessionExists: Boolean,
+        remoteClientReady: Boolean,
+        elapsedMs: Long,
+        timeoutMs: Long = SESSION_TIMEOUT_MS
+    ): Boolean {
+        return elapsedMs < timeoutMs && (!sessionExists || !remoteClientReady)
     }
 
     fun buildMediaLoadRequest(
@@ -74,22 +83,24 @@ internal object GoogleCastMediaLoader {
             mediaRoute.select()
 
             val castContext = CastContext.getSharedInstance(context)
+            val startMs = System.currentTimeMillis()
             val session = withTimeout(SESSION_TIMEOUT_MS) {
-                var current = castContext.sessionManager.currentCastSession
-                while (current == null) {
+                var session = castContext.sessionManager.currentCastSession
+                while (shouldContinueWaitingForSession(
+                        sessionExists = session != null,
+                        remoteClientReady = session?.remoteMediaClient != null,
+                        elapsedMs = System.currentTimeMillis() - startMs
+                    )) {
                     delay(SESSION_POLL_INTERVAL_MS)
-                    current = castContext.sessionManager.currentCastSession
+                    session = castContext.sessionManager.currentCastSession
                 }
-                current
+                if (session == null || session.remoteMediaClient == null) {
+                    throw IllegalStateException("无法获取远程媒体客户端")
+                }
+                session
             }
 
-            val remoteMediaClient = session.remoteMediaClient
-            if (remoteMediaClient == null) {
-                return@withContext Result.failure(
-                    IllegalStateException("无法获取远程媒体客户端")
-                )
-            }
-
+            val remoteMediaClient = session.remoteMediaClient!!
             val request = buildMediaLoadRequest(url, title, creator, contentType)
             remoteMediaClient.load(request)
 

@@ -4,8 +4,10 @@ import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GoogleCastMediaLoaderTest {
@@ -132,5 +134,67 @@ class GoogleCastMediaLoaderTest {
         )
 
         assertEquals("BiliPai Video", policy.title)
+    }
+
+    // --- session wait policy ---
+
+    @Test
+    fun `shouldContinueWaiting with no session and no remote client within timeout`() {
+        assertTrue(
+            GoogleCastMediaLoader.shouldContinueWaitingForSession(
+                sessionExists = false,
+                remoteClientReady = false,
+                elapsedMs = 1_000L,
+                timeoutMs = 5_000L
+            )
+        )
+    }
+
+    @Test
+    fun `shouldContinueWaiting with session but no remote client within timeout`() {
+        assertTrue(
+            GoogleCastMediaLoader.shouldContinueWaitingForSession(
+                sessionExists = true,
+                remoteClientReady = false,
+                elapsedMs = 3_000L,
+                timeoutMs = 5_000L
+            )
+        )
+    }
+
+    @Test
+    fun `shouldStopWaiting when session and remote client both ready`() {
+        assertFalse(
+            GoogleCastMediaLoader.shouldContinueWaitingForSession(
+                sessionExists = true,
+                remoteClientReady = true,
+                elapsedMs = 1_000L,
+                timeoutMs = 5_000L
+            )
+        )
+    }
+
+    @Test
+    fun `shouldStopWaiting when timeout exceeded even with no remote client`() {
+        assertFalse(
+            GoogleCastMediaLoader.shouldContinueWaitingForSession(
+                sessionExists = true,
+                remoteClientReady = false,
+                elapsedMs = 5_000L,
+                timeoutMs = 5_000L
+            )
+        )
+    }
+
+    @Test
+    fun `shouldStopWaiting when timeout exceeded with no session`() {
+        assertFalse(
+            GoogleCastMediaLoader.shouldContinueWaitingForSession(
+                sessionExists = false,
+                remoteClientReady = false,
+                elapsedMs = 10_001L,
+                timeoutMs = 5_000L
+            )
+        )
     }
 }

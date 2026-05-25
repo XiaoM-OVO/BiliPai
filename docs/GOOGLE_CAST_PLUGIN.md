@@ -146,6 +146,40 @@ Result on 2026-05-26:
 - Verified with targeted regression tests for `SsdpDevicePresentationPolicyTest` and `VideoPlayerOverlayCastPolicyTest`, plus `.\gradlew.bat :app:testDebugUnitTest --tests "*Cast*" --no-daemon`, `.\gradlew.bat :app:compileDebugKotlin --no-daemon`, and `.\gradlew.bat :app:assembleDebug --no-daemon`; all returned BUILD SUCCESSFUL.
 - Debug APK for device testing: `app/build/outputs/apk/debug/BiliPai-debug-8.4.1-debug.apk`.
 
+### Slice 6: Bugfix — DLNA Parsing, First-Tap RemoteMediaClient Wait, And Cast Playback Control
+
+Goal: fix three runtime bugs — (A) benign DOCTYPE descriptions rejected by SSDP XML parser, (B) Chromecast first-tap failing because `remoteMediaClient` not ready after session connect, and (C) app overlay unable to control Chromecast playback after media loads.
+
+Status: verified and APK built.
+
+Result on 2026-05-26:
+
+**(A) DLNA/SSDP profile parsing:**
+- `SsdpCastClient.parseDeviceProfile` no longer rejects all DOCTYPE declarations; removed `disallow-doctype-decl` feature and added `load-external-dtd=false`. External entity expansion and external parameter entities remain disabled.
+- Parse failure log changed from `Logger.e` to `Logger.w` since malformed non-DLNA descriptions are expected noise.
+- Added tests: DOCTYPE + AVTransport parses successfully; DOCTYPE + no AVTransport returns profile with null endpoint; invalid XML with partial tags still returns null.
+
+**(B) Chromecast first-tap media loading:**
+- `GoogleCastMediaLoader.loadMedia` now waits for both `currentCastSession != null` AND `session.remoteMediaClient != null` before proceeding.
+- Session timeout increased from 5s to 10s to accommodate device connection time.
+- Added pure `shouldContinueWaitingForSession` helper with tests covering: no-session/no-client, session/no-client, both-ready, timeout-exceeded.
+
+**(C) App UI playback/progress controls for active cast sessions:**
+- Added `CastPluginPlaybackState` data class (`isActive`, `deviceLabel`, `title`, `isPlaying`, `isBuffering`, `currentPositionMs`, `durationMs`, `bufferedPositionMs`, `canSeek`) to the generic `CastPluginApi` boundary.
+- Extended `CastPluginApi` with `playbackState: StateFlow<CastPluginPlaybackState>` (defaults to inactive), `play()`, `pause()`, `seek(positionMs)` with default unsupported-override implementations — source-compatible for all plugins.
+- Added `GoogleCastPlaybackController` using `RemoteMediaClient` polling (500ms interval) for playback state and delegating `play`/`pause`/`seek` through CAF.
+- `GoogleCastPlugin` wires the playback controller: attaches after successful `cast()` using `CastContext.sessionManager.currentCastSession`, detaches on disable.
+- `VideoPlayerOverlay` tracks `activeCastPlugin` after successful plugin cast; when a plugin reports `isActive` in its playback state, the overlay uses plugin progress/play state and routes play/pause/seek through the plugin. When no session is active, existing local player behavior is unchanged.
+- After successful plugin `cast()`, the local player is paused so local playback does not continue independently.
+- Added pure helper tests: `resolveEffectivePlayerProgress` and `resolveEffectivePlayingState` with local/plugin/inactive/active combinations.
+
+**Verification:**
+- `.\gradlew.bat :app:testDebugUnitTest --tests "*Cast*" --no-daemon` → BUILD SUCCESSFUL
+- Targeted regression tests for `SsdpCastClientTest`, `GoogleCastPlaybackControllerTest`, `CastPluginApiTest`, and `VideoPlayerOverlayCastPolicyTest` → BUILD SUCCESSFUL
+- `.\gradlew.bat :app:compileDebugKotlin --no-daemon` → BUILD SUCCESSFUL
+- `.\gradlew.bat :app:assembleDebug --no-daemon` → BUILD SUCCESSFUL
+- Debug APK for device testing: `app/build/outputs/apk/debug/BiliPai-debug-8.4.1-debug.apk`.
+
 ## Progress Log
 
 - 2026-05-26: Created isolated worktree `feature/google-cast-plugin`.
@@ -155,3 +189,4 @@ Result on 2026-05-26:
 - 2026-05-26: Completed Slice 2 Chromecast route discovery and device-list selection UI aligned with existing DLNA rows.
 - 2026-05-26: Corrected the plugin boundary so Google Cast discovery/loading lives behind `CastPluginApi`; completed Slice 3 Chromecast media loading.
 - 2026-05-26: Completed Slice 5 bugfix — SSDP per-device exception isolation, Google Cast route cache preservation, dialog dismissal timing fix, and debug APK build.
+- 2026-05-26: Completed Slice 6 bugfix — DLNA DOCTYPE parsing, first-tap RemoteMediaClient wait, and cast playback control.
