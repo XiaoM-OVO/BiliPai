@@ -25,6 +25,9 @@ import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.components.rememberAdaptiveSemanticIconTint
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.filled.*
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
 
 /**
  *  模糊强度选择器 (可展开/收起)
@@ -57,7 +60,7 @@ fun BlurIntensitySelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                rememberSettingsInlineIcon("blur_intensity_title"),
+                CupertinoIcons.Default.WandAndStars,
                 contentDescription = null,
                 tint = titleTint,
                 modifier = Modifier.size(24.dp)
@@ -77,11 +80,7 @@ fun BlurIntensitySelector(
             }
             // 展开/收起箭头
             Icon(
-                imageVector = if (isExpanded) {
-                    rememberSettingsInlineIcon("blur_intensity_collapse")
-                } else {
-                    rememberSettingsInlineIcon("blur_intensity_expand")
-                },
+                imageVector = if (isExpanded) CupertinoIcons.Default.ChevronUp else CupertinoIcons.Default.ChevronDown,
                 contentDescription = if (isExpanded) "收起" else "展开",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(24.dp)
@@ -97,7 +96,7 @@ fun BlurIntensitySelector(
             Column(modifier = Modifier.padding(start = 40.dp, top = 4.dp, bottom = 8.dp)) {
                 //  [调整] 顺序：标准 → 玻璃拟态 → 浓郁
                 BlurIntensityOption(
-                    icon = rememberSettingsInlineIcon("blur_intensity_thin"),
+                    icon = CupertinoIcons.Default.Speedometer,
                     iconTint = iOSBlue,
                     title = "标准",
                     description = "平衡美观与性能（推荐）",
@@ -110,7 +109,7 @@ fun BlurIntensitySelector(
                 Spacer(modifier = Modifier.height(8.dp))
                 //  玻璃拟态风格 - 移到中间
                 BlurIntensityOption(
-                    icon = rememberSettingsInlineIcon("blur_intensity_dock"),
+                    icon = CupertinoIcons.Default.SquareStack3dUp,
                     iconTint = iOSSystemGray,
                     title = "玻璃拟态",
                     description = "强烈模糊，完全遮盖背景",
@@ -123,7 +122,7 @@ fun BlurIntensitySelector(
                 Spacer(modifier = Modifier.height(8.dp))
                 //  浓郁 - 移到最后，有背景透色
                 BlurIntensityOption(
-                    icon = rememberSettingsInlineIcon("blur_intensity_thick"),
+                    icon = CupertinoIcons.Default.Sparkles,
                     iconTint = iOSPurple,
                     title = "浓郁",
                     description = "背景颜色透出 + 磨砂质感",
@@ -162,7 +161,7 @@ fun BlurIntensityOption(
     ) {
         if (isSelected) {
             Icon(
-                rememberSettingsInlineIcon("blur_intensity_selected"),
+                CupertinoIcons.Default.Checkmark,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)

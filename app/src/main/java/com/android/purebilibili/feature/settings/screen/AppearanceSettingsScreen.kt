@@ -20,6 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 //  Cupertino Icons - iOS SF Symbols 风格图标
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
+import io.github.alexzhirkevich.cupertino.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -260,16 +263,6 @@ fun AppearanceSettingsContent(
             androidNativeLabel = uiPresetAndroidLabel
         )
     }
-    val appIconStyleTitle = "应用内图标库"
-    val appIconStyleSubtitle = "应用栏、底栏、设置项和常用操作会跟随切换，桌面图标不变"
-    val appIconStyleOptions = remember {
-        AppIconStyle.entries.map { style ->
-            PlaybackSegmentOption(value = style, label = style.label)
-        }
-    }
-    val selectedAppIconStyleLabel = appIconStyleOptions
-        .firstOrNull { it.value == state.appIconStyle }
-        ?.label ?: state.appIconStyle.label
     val uiPresetIosTitle = stringResource(R.string.appearance_ui_preset_ios_title)
     val uiPresetIosSummary = stringResource(R.string.appearance_ui_preset_ios_summary)
     val uiPresetAndroidMaterialTitle = stringResource(R.string.appearance_ui_preset_android_material_title)
@@ -484,20 +477,6 @@ fun AppearanceSettingsContent(
                             }
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        IOSDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        IOSSlidingSegmentedSetting(
-                            title = "$appIconStyleTitle：$selectedAppIconStyleLabel",
-                            subtitle = "$appIconStyleSubtitle；${state.appIconStyle.description}",
-                            options = appIconStyleOptions,
-                            selectedValue = state.appIconStyle,
-                            onSelectionChange = { style ->
-                                viewModel.setAppIconStyle(style)
-                            }
-                        )
-
                         AnimatedVisibility(
                             visible = state.uiPreset == UiPreset.MD3,
                             enter = expandVertically() + fadeIn(),
@@ -680,7 +659,7 @@ fun AppearanceSettingsContent(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                rememberSettingsInlineIcon("appearance_theme_color_preview"),
+                                                CupertinoIcons.Filled.Play,
                                                 contentDescription = null,
                                                 tint = Color.White,
                                                 modifier = Modifier.size(32.dp)
@@ -775,7 +754,7 @@ fun AppearanceSettingsContent(
                                                             exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut()
                                                         ) {
                                                             Icon(
-                                                                rememberSettingsInlineIcon("appearance_theme_color_selected"),
+                                                                CupertinoIcons.Default.Checkmark,
                                                                 contentDescription = null,
                                                                 tint = Color.White,
                                                                 modifier = Modifier.size(18.dp)
@@ -888,10 +867,7 @@ fun AppearanceSettingsContent(
                         Spacer(modifier = Modifier.height(8.dp))
 
 	                        IOSSwitchItem(
-	                            icon = rememberSettingsSemanticIcon(
-	                                SettingsIconRole.DISPLAY_STYLE,
-	                                iconKey = "appearance_display_style_entry"
-	                            ),
+	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.DISPLAY_STYLE),
                             title = "应用内 DPI 覆盖",
                             subtitle = resolveDpiOverrideSubtitle(
                                 systemDensityDpi = displayMetricsSnapshot.systemDensityDpi,
@@ -1041,10 +1017,7 @@ fun AppearanceSettingsContent(
 
                     IOSDivider()
 	                    IOSSwitchItem(
-	                        icon = rememberSettingsSemanticIcon(
-	                            SettingsIconRole.ANIMATION,
-	                            iconKey = "appearance_animation_section"
-	                        ),
+	                        icon = rememberSettingsSemanticIcon(SettingsIconRole.ANIMATION),
                         title = "开屏图标遮罩动画",
                         subtitle = "关闭后不保留图标页，不播放遮罩和飞出动画",
                         checked = splashIconAnimationEnabled,
@@ -1094,7 +1067,7 @@ fun AppearanceSettingsContent(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                rememberSettingsInlineIcon("appearance_splash_wallpaper_empty"),
+                                                CupertinoIcons.Default.Photo,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(24.dp)
@@ -1119,7 +1092,7 @@ fun AppearanceSettingsContent(
                                 }
                                 
                                 Icon(
-                                    rememberSettingsInlineIcon("appearance_splash_wallpaper_open"),
+                                    CupertinoIcons.Default.ChevronForward,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                     modifier = Modifier.size(16.dp)
@@ -1173,10 +1146,7 @@ fun AppearanceSettingsContent(
                     IOSDivider()
                     // 动画设置
 	                    IOSClickableItem(
-	                        icon = rememberSettingsSemanticIcon(
-	                            SettingsIconRole.ANIMATION,
-	                            iconKey = "appearance_animation_settings_link"
-	                        ),
+	                        icon = rememberSettingsSemanticIcon(SettingsIconRole.ANIMATION),
                         title = "动画与效果",
                         value = if (state.cardAnimationEnabled) "已开启" else "已关闭",
                         onClick = onNavigateToAnimationSettings,
@@ -1206,10 +1176,7 @@ fun AppearanceSettingsContent(
                     IOSDivider()
                     // 触感反馈
 	                    IOSSwitchItem(
-	                        icon = rememberSettingsSemanticIcon(
-	                            SettingsIconRole.FULLSCREEN_GESTURE,
-	                            iconKey = "appearance_fullscreen_gesture_link"
-	                        ),
+	                        icon = rememberSettingsSemanticIcon(SettingsIconRole.FULLSCREEN_GESTURE),
                         title = "触感反馈",
                         checked = state.hapticFeedbackEnabled,
                         onCheckedChange = { viewModel.toggleHapticFeedback(it) },
@@ -1256,10 +1223,7 @@ fun AppearanceSettingsContent(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
 	                                Icon(
-	                                    rememberSettingsSemanticIcon(
-	                                        SettingsIconRole.DISPLAY_STYLE,
-	                                        iconKey = "appearance_display_style_mode"
-	                                    ),
+	                                    rememberSettingsSemanticIcon(SettingsIconRole.DISPLAY_STYLE),
                                     contentDescription = null,
                                     tint = displayModeTint,
                                     modifier = Modifier.size(24.dp)
@@ -1278,11 +1242,7 @@ fun AppearanceSettingsContent(
                                     )
                                 }
                                 Icon(
-                                    imageVector = if (isExpanded) {
-                                        rememberSettingsInlineIcon("appearance_display_style_collapse")
-                                    } else {
-                                        rememberSettingsInlineIcon("appearance_display_style_expand")
-                                    },
+                                    imageVector = if (isExpanded) CupertinoIcons.Default.ChevronUp else CupertinoIcons.Default.ChevronDown,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.size(24.dp)
@@ -1332,7 +1292,7 @@ fun AppearanceSettingsContent(
                                             }
                                             if (isSelected) {
                                                 Icon(
-                                                    rememberSettingsInlineIcon("appearance_display_style_selected"),
+                                                    CupertinoIcons.Default.Checkmark,
                                                     contentDescription = "已选择",
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
@@ -1346,10 +1306,7 @@ fun AppearanceSettingsContent(
                         
                         IOSDivider(modifier = Modifier.padding(start = 16.dp))
                         IOSSwitchItem(
-                            icon = rememberSettingsSemanticIcon(
-                                SettingsIconRole.DISPLAY_STYLE,
-                                iconKey = "appearance_display_style_feed"
-                            ),
+                            icon = rememberSettingsSemanticIcon(SettingsIconRole.DISPLAY_STYLE),
                             title = "统计信息贴封面（紧凑）",
                             subtitle = if (compactVideoStatsOnCover) {
                                 "播放量和评论数显示在封面底部，缩小卡片间距"
@@ -1443,7 +1400,7 @@ fun AppearanceSettingsContent(
                             }
 
                             Icon(
-                                rememberSettingsInlineIcon("appearance_home_wallpaper_open"),
+                                CupertinoIcons.Default.ChevronForward,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                 modifier = Modifier.size(16.dp)
@@ -1519,10 +1476,7 @@ fun AppearanceSettingsContent(
 
                         IOSDivider(modifier = Modifier.padding(start = 16.dp))
 	                        IOSSwitchItem(
-	                            icon = rememberSettingsSemanticIcon(
-	                                SettingsIconRole.ONLINE_COUNT,
-	                                iconKey = "appearance_home_online_count"
-	                            ),
+	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.ONLINE_COUNT),
                             title = "卡片与视频页观看人数",
                             subtitle = if (showOnlineCount) {
                                 "首页、搜索等视频卡片和视频页显示“xx人正在看”"
@@ -1552,7 +1506,7 @@ fun AppearanceSettingsContent(
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                                     ) {
                                         Icon(
-                                            rememberSettingsInlineIcon("appearance_home_tabs_header"),
+                                            CupertinoIcons.Default.ListBullet,
                                             contentDescription = null,
                                             tint = com.android.purebilibili.core.theme.iOSBlue,
                                             modifier = Modifier.size(24.dp)
@@ -1829,7 +1783,7 @@ private fun <T> ThemePresetDropdownSetting(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
-                imageVector = rememberSettingsInlineIcon("appearance_bottom_sheet_expand"),
+                imageVector = CupertinoIcons.Default.ChevronDown,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)

@@ -1,6 +1,17 @@
 // 文件路径: feature/settings/BottomBarSettingsScreen.kt
 package com.android.purebilibili.feature.settings
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.SmartToy
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +32,10 @@ import androidx.compose.ui.geometry.Offset // [New]
 import androidx.compose.ui.input.pointer.PointerInputChange // [New]
 import com.android.purebilibili.core.util.rememberHapticFeedback // [New]
 import com.android.purebilibili.core.util.HapticType // [New]
+//  Cupertino Icons - iOS SF Symbols 风格图标
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
+import io.github.alexzhirkevich.cupertino.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,17 +50,20 @@ import androidx.compose.ui.unit.dp
 import com.android.purebilibili.R
 import com.android.purebilibili.core.store.HomeHeaderBlurMode
 import com.android.purebilibili.core.store.SettingsManager
-import com.android.purebilibili.core.theme.AppIconStyle
 import com.android.purebilibili.core.theme.BottomBarColors  //  统一底栏颜色配置
 import com.android.purebilibili.core.theme.BottomBarColorPalette  //  调色板
 import com.android.purebilibili.core.theme.BottomBarColorNames  //  颜色名称
-import com.android.purebilibili.core.theme.LocalAppIconStyle
 import com.android.purebilibili.core.theme.LocalSettingsLiquidGlassEnabled
 import com.android.purebilibili.core.theme.LocalUiPreset
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.ui.AdaptiveScaffold
 import com.android.purebilibili.core.ui.AdaptiveTopAppBar
 import com.android.purebilibili.core.ui.rememberAppBackIcon
+import com.android.purebilibili.core.ui.resolveAppDynamicIcon
+import com.android.purebilibili.core.ui.resolveAppHomeIcon
+import com.android.purebilibili.core.ui.resolveAppSettingsIcon
+import com.android.purebilibili.core.ui.resolveAppTvIcon
+import com.android.purebilibili.core.ui.resolveAppWatchLaterIcon
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
 import com.android.purebilibili.core.util.LocalWindowSizeClass
@@ -72,54 +90,92 @@ data class TopTabConfig(
 
 internal fun resolveBottomBarTabIcon(
     id: String,
-    uiPreset: UiPreset = UiPreset.IOS,
-    appIconStyle: AppIconStyle? = null
+    uiPreset: UiPreset = UiPreset.IOS
 ): ImageVector {
-    val style = appIconStyle ?: AppIconStyle.LUCIDE
-    return resolveSettingsInlineIcon("bottom_bar_tab_${id.lowercase()}_${uiPreset.name.lowercase()}", style)
+    return when (uiPreset) {
+        UiPreset.MD3 -> when (id) {
+            "HOME" -> resolveAppHomeIcon(uiPreset)
+            "DYNAMIC" -> resolveAppDynamicIcon(uiPreset)
+            "STORY" -> Icons.Outlined.PlayCircleOutline
+            "HISTORY" -> Icons.Outlined.History
+            "PROFILE" -> Icons.Outlined.Person
+            "FAVORITE" -> Icons.Outlined.StarBorder
+            "LIVE" -> resolveAppTvIcon(uiPreset)
+            "WATCHLATER" -> resolveAppWatchLaterIcon(uiPreset)
+            "SETTINGS" -> resolveAppSettingsIcon(uiPreset)
+            else -> resolveAppHomeIcon(uiPreset)
+        }
+        UiPreset.IOS -> when (id) {
+            "HOME" -> CupertinoIcons.Default.House
+            "DYNAMIC" -> CupertinoIcons.Default.RectangleStack
+            "STORY" -> CupertinoIcons.Default.PlayCircle
+            "HISTORY" -> CupertinoIcons.Default.Clock
+            "PROFILE" -> CupertinoIcons.Default.PersonCircle
+            "FAVORITE" -> CupertinoIcons.Default.Star
+            "LIVE" -> CupertinoIcons.Default.Video
+            "WATCHLATER" -> resolveAppWatchLaterIcon(uiPreset)
+            "SETTINGS" -> CupertinoIcons.Default.Gearshape
+            else -> CupertinoIcons.Default.House
+        }
+    }
 }
 
 internal fun resolveTopTabIcon(
     id: String,
-    uiPreset: UiPreset = UiPreset.IOS,
-    appIconStyle: AppIconStyle? = null
+    uiPreset: UiPreset = UiPreset.IOS
 ): ImageVector {
-    val style = appIconStyle ?: AppIconStyle.LUCIDE
-    return resolveSettingsInlineIcon("top_tab_${id.lowercase()}_${uiPreset.name.lowercase()}", style)
+    return when (uiPreset) {
+        UiPreset.MD3 -> when (id) {
+            "RECOMMEND" -> Icons.Outlined.Home
+            "FOLLOW" -> Icons.Outlined.Person
+            "POPULAR" -> Icons.AutoMirrored.Outlined.TrendingUp
+            "LIVE" -> Icons.Outlined.LiveTv
+            "ANIME" -> Icons.Outlined.Tv
+            "GAME" -> Icons.Outlined.PlayCircleOutline
+            "KNOWLEDGE" -> Icons.Outlined.Lightbulb
+            "TECH" -> Icons.Outlined.SmartToy
+            else -> Icons.Outlined.Home
+        }
+        UiPreset.IOS -> when (id) {
+            "RECOMMEND" -> CupertinoIcons.Default.House
+            "FOLLOW" -> CupertinoIcons.Default.PersonCropCircleBadgePlus
+            "POPULAR" -> CupertinoIcons.Default.ChartBar
+            "LIVE" -> CupertinoIcons.Default.Video
+            "ANIME" -> CupertinoIcons.Default.Tv
+            "GAME" -> CupertinoIcons.Default.PlayCircle
+            "KNOWLEDGE" -> CupertinoIcons.Default.Lightbulb
+            "TECH" -> CupertinoIcons.Default.Cpu
+            else -> CupertinoIcons.Default.House
+        }
+    }
 }
 
 /**
  * 所有可用的底栏项目
  */
-internal fun resolveAllBottomBarTabs(
-    uiPreset: UiPreset = UiPreset.IOS,
-    appIconStyle: AppIconStyle? = null
-): List<BottomBarTabConfig> = listOf(
-    BottomBarTabConfig("HOME", "首页", resolveBottomBarTabIcon("HOME", uiPreset, appIconStyle), isDefault = true),
-    BottomBarTabConfig("DYNAMIC", "动态", resolveBottomBarTabIcon("DYNAMIC", uiPreset, appIconStyle), isDefault = true),
-    BottomBarTabConfig("STORY", "短视频", resolveBottomBarTabIcon("STORY", uiPreset, appIconStyle), isDefault = false),
-    BottomBarTabConfig("HISTORY", "历史", resolveBottomBarTabIcon("HISTORY", uiPreset, appIconStyle), isDefault = true),
-    BottomBarTabConfig("PROFILE", "我的", resolveBottomBarTabIcon("PROFILE", uiPreset, appIconStyle), isDefault = true),
-    BottomBarTabConfig("FAVORITE", "收藏", resolveBottomBarTabIcon("FAVORITE", uiPreset, appIconStyle), isDefault = false),
-    BottomBarTabConfig("LIVE", "直播", resolveBottomBarTabIcon("LIVE", uiPreset, appIconStyle), isDefault = false),
-    BottomBarTabConfig("WATCHLATER", "稍后看", resolveBottomBarTabIcon("WATCHLATER", uiPreset, appIconStyle), isDefault = false),
-    BottomBarTabConfig("SETTINGS", "设置", resolveBottomBarTabIcon("SETTINGS", uiPreset, appIconStyle), isDefault = false)
+internal fun resolveAllBottomBarTabs(uiPreset: UiPreset = UiPreset.IOS): List<BottomBarTabConfig> = listOf(
+    BottomBarTabConfig("HOME", "首页", resolveBottomBarTabIcon("HOME", uiPreset), isDefault = true),
+    BottomBarTabConfig("DYNAMIC", "动态", resolveBottomBarTabIcon("DYNAMIC", uiPreset), isDefault = true),
+    BottomBarTabConfig("STORY", "短视频", resolveBottomBarTabIcon("STORY", uiPreset), isDefault = false),
+    BottomBarTabConfig("HISTORY", "历史", resolveBottomBarTabIcon("HISTORY", uiPreset), isDefault = true),
+    BottomBarTabConfig("PROFILE", "我的", resolveBottomBarTabIcon("PROFILE", uiPreset), isDefault = true),
+    BottomBarTabConfig("FAVORITE", "收藏", resolveBottomBarTabIcon("FAVORITE", uiPreset), isDefault = false),
+    BottomBarTabConfig("LIVE", "直播", resolveBottomBarTabIcon("LIVE", uiPreset), isDefault = false),
+    BottomBarTabConfig("WATCHLATER", "稍后看", resolveBottomBarTabIcon("WATCHLATER", uiPreset), isDefault = false),
+    BottomBarTabConfig("SETTINGS", "设置", resolveBottomBarTabIcon("SETTINGS", uiPreset), isDefault = false)
 )
 
 private val defaultTopTabIds = listOf("RECOMMEND", "FOLLOW", "POPULAR", "LIVE", "GAME")
 
-internal fun resolveAllTopTabs(
-    uiPreset: UiPreset = UiPreset.IOS,
-    appIconStyle: AppIconStyle? = null
-): List<TopTabConfig> = listOf(
-    TopTabConfig("RECOMMEND", "推荐", resolveTopTabIcon("RECOMMEND", uiPreset, appIconStyle), fixedVisible = true),
-    TopTabConfig("FOLLOW", "关注", resolveTopTabIcon("FOLLOW", uiPreset, appIconStyle)),
-    TopTabConfig("POPULAR", "热门", resolveTopTabIcon("POPULAR", uiPreset, appIconStyle)),
-    TopTabConfig("LIVE", "直播", resolveTopTabIcon("LIVE", uiPreset, appIconStyle)),
-    TopTabConfig("ANIME", "追番", resolveTopTabIcon("ANIME", uiPreset, appIconStyle)),
-    TopTabConfig("GAME", "游戏", resolveTopTabIcon("GAME", uiPreset, appIconStyle)),
-    TopTabConfig("KNOWLEDGE", "知识", resolveTopTabIcon("KNOWLEDGE", uiPreset, appIconStyle)),
-    TopTabConfig("TECH", "科技", resolveTopTabIcon("TECH", uiPreset, appIconStyle))
+internal fun resolveAllTopTabs(uiPreset: UiPreset = UiPreset.IOS): List<TopTabConfig> = listOf(
+    TopTabConfig("RECOMMEND", "推荐", resolveTopTabIcon("RECOMMEND", uiPreset), fixedVisible = true),
+    TopTabConfig("FOLLOW", "关注", resolveTopTabIcon("FOLLOW", uiPreset)),
+    TopTabConfig("POPULAR", "热门", resolveTopTabIcon("POPULAR", uiPreset)),
+    TopTabConfig("LIVE", "直播", resolveTopTabIcon("LIVE", uiPreset)),
+    TopTabConfig("ANIME", "追番", resolveTopTabIcon("ANIME", uiPreset)),
+    TopTabConfig("GAME", "游戏", resolveTopTabIcon("GAME", uiPreset)),
+    TopTabConfig("KNOWLEDGE", "知识", resolveTopTabIcon("KNOWLEDGE", uiPreset)),
+    TopTabConfig("TECH", "科技", resolveTopTabIcon("TECH", uiPreset))
 )
 
 /**
@@ -167,7 +223,6 @@ fun BottomBarSettingsContent(
 ) {
     val context = LocalContext.current
     val uiPreset = LocalUiPreset.current
-    val appIconStyle = LocalAppIconStyle.current
     val windowSizeClass = LocalWindowSizeClass.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -188,12 +243,8 @@ fun BottomBarSettingsContent(
         listState.animateScrollToItem(index)
         SettingsSearchFocusController.clear(request.token)
     }
-    val allBottomBarTabs = remember(uiPreset, appIconStyle) {
-        resolveAllBottomBarTabs(uiPreset, appIconStyle)
-    }
-    val allTopTabs = remember(uiPreset, appIconStyle) {
-        resolveAllTopTabs(uiPreset, appIconStyle)
-    }
+    val allBottomBarTabs = remember(uiPreset) { resolveAllBottomBarTabs(uiPreset) }
+    val allTopTabs = remember(uiPreset) { resolveAllTopTabs(uiPreset) }
 
     LaunchedEffect(Unit) {
         isVisible = true
@@ -337,7 +388,7 @@ fun BottomBarSettingsContent(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    rememberSettingsInlineIcon("bottom_bar_visibility_mode"),
+                                    CupertinoIcons.Default.Eye,
                                     contentDescription = null,
                                     tint = com.android.purebilibili.core.theme.iOSOrange,
                                     modifier = Modifier.size(24.dp)
@@ -356,11 +407,7 @@ fun BottomBarSettingsContent(
                                     )
                                 }
                                 Icon(
-                                    imageVector = if (visibilityModeExpanded) {
-                                        rememberSettingsInlineIcon("bottom_bar_visibility_collapse")
-                                    } else {
-                                        rememberSettingsInlineIcon("bottom_bar_visibility_expand")
-                                    },
+                                    imageVector = if (visibilityModeExpanded) CupertinoIcons.Default.ChevronUp else CupertinoIcons.Default.ChevronDown,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.size(24.dp)
@@ -412,7 +459,7 @@ fun BottomBarSettingsContent(
                                             }
                                             if (isSelected) {
                                                 Icon(
-                                                    rememberSettingsInlineIcon("bottom_bar_visibility_selected"),
+                                                    CupertinoIcons.Default.Checkmark,
                                                     contentDescription = "已选择",
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
@@ -430,7 +477,7 @@ fun BottomBarSettingsContent(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    rememberSettingsInlineIcon("bottom_bar_label_style_header"),
+                                    CupertinoIcons.Default.Tag,
                                     contentDescription = null,
                                     tint = com.android.purebilibili.core.theme.iOSPurple,
                                     modifier = Modifier.size(24.dp)
@@ -461,9 +508,9 @@ fun BottomBarSettingsContent(
                             ) {
                                 // 三种模式选择按钮
                                 listOf(
-                                    Triple(0, "图标+文字", rememberSettingsInlineIcon("bottom_bar_label_icon_text")),
-                                    Triple(1, "仅图标", rememberSettingsInlineIcon("bottom_bar_label_icon_only")),
-                                    Triple(2, "仅文字", rememberSettingsInlineIcon("bottom_bar_label_text_only"))
+                                    Triple(0, "图标+文字", CupertinoIcons.Default.House),
+                                    Triple(1, "仅图标", CupertinoIcons.Default.HandThumbsup),
+                                    Triple(2, "仅文字", CupertinoIcons.Default.Character)
                                 ).forEach { (mode, label, icon) ->
                                     val isSelected = labelMode == mode
                                     Column(
@@ -519,7 +566,7 @@ fun BottomBarSettingsContent(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    rememberSettingsInlineIcon("top_tab_label_style_header"),
+                                    CupertinoIcons.Default.ListBullet,
                                     contentDescription = null,
                                     tint = com.android.purebilibili.core.theme.iOSBlue,
                                     modifier = Modifier.size(24.dp)
@@ -548,21 +595,9 @@ fun BottomBarSettingsContent(
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 listOf(
-                                    Triple(
-                                        SettingsManager.TopTabLabelMode.ICON_AND_TEXT,
-                                        "图标+文字",
-                                        rememberSettingsInlineIcon("top_tab_label_icon_text")
-                                    ),
-                                    Triple(
-                                        SettingsManager.TopTabLabelMode.ICON_ONLY,
-                                        "仅图标",
-                                        rememberSettingsInlineIcon("top_tab_label_icon_only")
-                                    ),
-                                    Triple(
-                                        SettingsManager.TopTabLabelMode.TEXT_ONLY,
-                                        "仅文字",
-                                        rememberSettingsInlineIcon("top_tab_label_text_only")
-                                    )
+                                    Triple(SettingsManager.TopTabLabelMode.ICON_AND_TEXT, "图标+文字", CupertinoIcons.Default.ListBullet),
+                                    Triple(SettingsManager.TopTabLabelMode.ICON_ONLY, "仅图标", CupertinoIcons.Default.Tag),
+                                    Triple(SettingsManager.TopTabLabelMode.TEXT_ONLY, "仅文字", CupertinoIcons.Default.Character)
                                 ).forEach { (mode, label, icon) ->
                                     val isSelected = topTabLabelMode == mode
                                     Column(
@@ -601,7 +636,7 @@ fun BottomBarSettingsContent(
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    rememberSettingsInlineIcon("bottom_bar_color_header"),
+                                    CupertinoIcons.Default.Drop,
                                     contentDescription = null,
                                     tint = com.android.purebilibili.core.theme.iOSTeal,
                                     modifier = Modifier.size(24.dp)
@@ -689,7 +724,7 @@ fun BottomBarSettingsContent(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = rememberSettingsInlineIcon("top_tab_auto_collapse"),
+                                    imageVector = CupertinoIcons.Default.ChevronUp,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
@@ -758,7 +793,7 @@ fun BottomBarSettingsContent(
                                         enabled = !tab.fixedVisible && index > 1
                                     ) {
                                         Icon(
-                                            rememberSettingsInlineIcon("top_tab_order_move_up"),
+                                            CupertinoIcons.Default.ChevronUp,
                                             contentDescription = "上移",
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -768,7 +803,7 @@ fun BottomBarSettingsContent(
                                         enabled = !tab.fixedVisible && index < visibleTopOrder.lastIndex
                                     ) {
                                         Icon(
-                                            rememberSettingsInlineIcon("top_tab_order_move_down"),
+                                            CupertinoIcons.Default.ChevronDown,
                                             contentDescription = "下移",
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -840,7 +875,7 @@ fun BottomBarSettingsContent(
                 Box(modifier = Modifier.staggeredEntrance(6, isVisible, motionTier = effectiveMotionTier)) {
                     IOSGroup {
                         IOSSwitchItem(
-                            icon = rememberSettingsInlineIcon("bottom_bar_tablet_sidebar"),
+                            icon = CupertinoIcons.Outlined.SidebarLeft,
                             title = "侧边导航栏",
                             subtitle = "在平板横屏或大屏布局中使用侧边栏代替底部导航",
                             checked = tabletUseSidebar,
@@ -959,11 +994,7 @@ fun BottomBarSettingsContent(
                                 contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Icon(
-                                rememberSettingsInlineIcon("bottom_bar_reset"),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Icon(CupertinoIcons.Default.ArrowCounterclockwise, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("重置为默认")
                         }
@@ -1197,7 +1228,7 @@ private fun BottomBarTabItem(
                             Spacer(modifier = Modifier.weight(1f))
                             if (index == colorIndex) {
                                 Icon(
-                                    rememberSettingsInlineIcon("bottom_bar_color_selected"),
+                                    CupertinoIcons.Default.Checkmark,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)

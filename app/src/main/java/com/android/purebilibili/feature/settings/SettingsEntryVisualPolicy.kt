@@ -9,9 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.android.purebilibili.R
-import com.android.purebilibili.core.theme.AppIconStyle
 import com.android.purebilibili.core.theme.LocalDynamicColorActive
-import com.android.purebilibili.core.theme.LocalAppIconStyle
 import com.android.purebilibili.core.theme.LocalUiPreset
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.theme.iOSBlue
@@ -173,28 +171,21 @@ private fun resolveIosSettingsEntryTint(
 internal fun rememberSettingsEntryVisual(
     target: SettingsSearchTarget,
     uiPreset: UiPreset = LocalUiPreset.current,
-    appIconStyle: AppIconStyle = LocalAppIconStyle.current,
     dynamicColorActive: Boolean = LocalDynamicColorActive.current
 ): SettingsEntryVisual {
     val colorScheme = MaterialTheme.colorScheme
     val md3Palette = remember(colorScheme, dynamicColorActive) {
         resolveMd3SettingsEntryThemePalette(colorScheme, useSemanticAccentRoles = dynamicColorActive)
     }
-    return remember(target, uiPreset, appIconStyle, dynamicColorActive, md3Palette) {
-        resolveSettingsEntryVisual(
-            target = target,
-            uiPreset = uiPreset,
-            md3Palette = md3Palette,
-            appIconStyle = appIconStyle
-        )
+    return remember(target, uiPreset, dynamicColorActive, md3Palette) {
+        resolveSettingsEntryVisual(target, uiPreset, md3Palette)
     }
 }
 
 internal fun resolveSettingsEntryVisual(
     target: SettingsSearchTarget,
     uiPreset: UiPreset = UiPreset.IOS,
-    md3Palette: SettingsEntryThemePalette = PreviewMd3SettingsEntryThemePalette,
-    appIconStyle: AppIconStyle? = null
+    md3Palette: SettingsEntryThemePalette = PreviewMd3SettingsEntryThemePalette
 ): SettingsEntryVisual {
     val iconTint = if (uiPreset == UiPreset.MD3) {
         md3Palette.resolve(resolveMd3SettingsEntryTintRole(target))
@@ -211,25 +202,11 @@ internal fun resolveSettingsEntryVisual(
             iconTint = iconTint
         )
         else -> SettingsEntryVisual(
-            icon = resolveSettingsSearchTargetIcon(
-                target = target,
-                uiPreset = uiPreset,
-                appIconStyle = appIconStyle
+            icon = resolveSettingsSemanticIcon(
+                role = resolveSettingsSearchTargetIconRole(target),
+                uiPreset = uiPreset
             ),
             iconTint = iconTint
         )
-    }
-}
-
-private fun resolveSettingsSearchTargetIcon(
-    target: SettingsSearchTarget,
-    uiPreset: UiPreset,
-    appIconStyle: AppIconStyle?
-): ImageVector {
-    val role = resolveSettingsSearchTargetIconRole(target)
-    return if (appIconStyle != null) {
-        resolveSettingsSemanticIcon(role = role, style = appIconStyle)
-    } else {
-        resolveSettingsSemanticIcon(role = role, uiPreset = uiPreset)
     }
 }

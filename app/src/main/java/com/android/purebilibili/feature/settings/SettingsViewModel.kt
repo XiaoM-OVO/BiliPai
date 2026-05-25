@@ -18,7 +18,6 @@ import com.android.purebilibili.core.store.resolveLegacyLiquidGlassMode
 import com.android.purebilibili.core.store.normalizeAppIconKey
 import com.android.purebilibili.core.store.resolveAppIconLauncherAlias
 import com.android.purebilibili.core.theme.AppFontSizePreset
-import com.android.purebilibili.core.theme.AppIconStyle
 import com.android.purebilibili.core.theme.AppUiScalePreset
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.UiPreset
@@ -39,7 +38,6 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val uiPreset: UiPreset = UiPreset.IOS,
     val androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3,
-    val appIconStyle: AppIconStyle = AppIconStyle.LUCIDE,
     val hwDecode: Boolean = true,
     val themeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
     val darkThemeStyle: DarkThemeStyle = DarkThemeStyle.DEFAULT,
@@ -107,7 +105,6 @@ data class SettingsUiState(
 private data class CoreSettings(
     val uiPreset: UiPreset,
     val androidNativeVariant: AndroidNativeVariant,
-    val appIconStyle: AppIconStyle,
     val hwDecode: Boolean,
     val themeMode: AppThemeMode,
     val darkThemeStyle: DarkThemeStyle,
@@ -169,7 +166,6 @@ data class ExperimentalSettings(
 private data class BaseSettings(
     val uiPreset: UiPreset,
     val androidNativeVariant: AndroidNativeVariant,
-    val appIconStyle: AppIconStyle,
     val hwDecode: Boolean,
     val themeMode: AppThemeMode,
     val darkThemeStyle: DarkThemeStyle,
@@ -238,7 +234,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val coreSettingsFlow = combine(
         SettingsManager.getUiPreset(context).asAnyFlow(),
         SettingsManager.getAndroidNativeVariant(context).asAnyFlow(),
-        SettingsManager.getAppIconStyle(context).asAnyFlow(),
         SettingsManager.getHwDecode(context).asAnyFlow(),
         SettingsManager.getThemeMode(context).asAnyFlow(),
         SettingsManager.getDarkThemeStyle(context).asAnyFlow(),
@@ -251,15 +246,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         CoreSettings(
             uiPreset = values[0] as UiPreset,
             androidNativeVariant = values[1] as AndroidNativeVariant,
-            appIconStyle = values[2] as AppIconStyle,
-            hwDecode = values[3] as Boolean,
-            themeMode = values[4] as AppThemeMode,
-            darkThemeStyle = values[5] as DarkThemeStyle,
-            appLanguage = values[6] as AppLanguage,
-            dynamicColor = values[7] as Boolean,
-            colorStyle = values[8] as PaletteStyle,
-            colorSpec = values[9] as ColorSpec.SpecVersion,
-            bgPlay = values[10] as Boolean
+            hwDecode = values[2] as Boolean,
+            themeMode = values[3] as AppThemeMode,
+            darkThemeStyle = values[4] as DarkThemeStyle,
+            appLanguage = values[5] as AppLanguage,
+            dynamicColor = values[6] as Boolean,
+            colorStyle = values[7] as PaletteStyle,
+            colorSpec = values[8] as ColorSpec.SpecVersion,
+            bgPlay = values[9] as Boolean
         )
     }
     
@@ -460,7 +454,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         BaseSettings(
             uiPreset = core.uiPreset,
             androidNativeVariant = core.androidNativeVariant,
-            appIconStyle = core.appIconStyle,
             hwDecode = core.hwDecode,
             themeMode = core.themeMode,
             darkThemeStyle = core.darkThemeStyle,
@@ -518,7 +511,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         SettingsUiState(
             uiPreset = settings.uiPreset,
             androidNativeVariant = settings.androidNativeVariant,
-            appIconStyle = settings.appIconStyle,
             hwDecode = settings.hwDecode,
             themeMode = settings.themeMode,
             darkThemeStyle = settings.darkThemeStyle,
@@ -613,11 +605,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAndroidNativeVariant(variant: AndroidNativeVariant) {
         viewModelScope.launch {
             SettingsManager.setAndroidNativeVariant(context, variant)
-        }
-    }
-    fun setAppIconStyle(style: AppIconStyle) {
-        viewModelScope.launch {
-            SettingsManager.setAppIconStyle(context, style)
         }
     }
     fun setThemeMode(mode: AppThemeMode) { 

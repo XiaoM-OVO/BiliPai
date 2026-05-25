@@ -34,6 +34,9 @@ import com.android.purebilibili.core.ui.components.rememberAdaptiveSemanticIconT
 import com.android.purebilibili.core.ui.components.IOSSectionTitle
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.core.util.LocalWindowSizeClass
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.filled.*
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
 
 private data class TipEntry(
     val icon: ImageVector,
@@ -68,41 +71,28 @@ fun TipsSettingsScreen(
         extraBottomPadding = 32.dp
     )
 
-    val tipPlayerShrinkIcon = rememberSettingsInlineIcon("tip_player_shrink")
-    val tipScrollTopIcon = rememberSettingsInlineIcon("tip_scroll_top")
-    val tipLongPressIcon = rememberSettingsInlineIcon("tip_long_press")
-    val tipSearchIcon = rememberSettingsInlineIcon("tip_search")
-    val tipAutoplayIcon = rememberSettingsInlineIcon("tip_autoplay")
-    val tipOrientationIcon = rememberSettingsInlineIcon("tip_orientation")
-    val tipPipIcon = rememberSettingsInlineIcon("tip_pip")
-    val tipLikeIcon = rememberSettingsInlineIcon("tip_like")
-    val tipSponsorBlockIcon = rememberSettingsInlineIcon("tip_sponsor_block")
-    val tipVersionIcon = rememberSettingsInlineIcon("tip_version")
-    val tipEasterEggIcon = rememberSettingsInlineIcon("tip_easter_egg")
-    val tipOpenLinksIcon = rememberSettingsInlineIcon("tip_open_links")
-
-    val basicTips = remember(tipPlayerShrinkIcon, tipScrollTopIcon, tipLongPressIcon, tipSearchIcon) {
+    val basicTips = remember {
         listOf(
             TipEntry(
-                icon = tipPlayerShrinkIcon,
+                icon = CupertinoIcons.Filled.HandDraw,
                 iconTint = iOSBlue,
                 title = "1. 摸鱼模式：播放器缩小策略",
                 content = "在播放设置里把「播放器缩小策略」设为竖屏、横屏或全部后，对应视频方向使用缩小播放器策略。"
             ),
             TipEntry(
-                icon = tipScrollTopIcon,
+                icon = CupertinoIcons.Default.ChevronUp,
                 iconTint = iOSTeal,
                 title = "2. 回顶部不用狂划",
                 content = "首页刷太深时，双击底栏「首页」图标，或双击顶部频道标题，可快速回到列表顶部。"
             ),
             TipEntry(
-                icon = tipLongPressIcon,
+                icon = CupertinoIcons.Filled.HandTap,
                 iconTint = iOSOrange,
                 title = "3. 封面长按有快捷操作",
                 content = "长按视频卡片可快速预览，并直接执行「稍后再看」等常用动作。"
             ),
             TipEntry(
-                icon = tipSearchIcon,
+                icon = CupertinoIcons.Default.MagnifyingGlass,
                 iconTint = iOSGreen,
                 title = "4. 搜索不只搜视频",
                 content = "搜索页可切换「视频 / UP主 / 番剧 / 直播」，还能按分区、排序、时长做精确筛选。"
@@ -110,28 +100,28 @@ fun TipsSettingsScreen(
         )
     }
 
-    val hiddenTips = remember(tipAutoplayIcon, tipOrientationIcon, tipPipIcon, tipLikeIcon) {
+    val hiddenTips = remember {
         listOf(
             TipEntry(
-                icon = tipAutoplayIcon,
+                icon = CupertinoIcons.Filled.ForwardEnd,
                 iconTint = iOSPink,
                 title = "5. 关闭自动连播，结尾更安静",
                 content = "在播放设置关闭「自动播放下一个」后，视频播完会停在结束态，不再自动连播。"
             ),
             TipEntry(
-                icon = tipOrientationIcon,
+                icon = CupertinoIcons.Filled.ArrowTriangle2CirclepathCamera,
                 iconTint = iOSBlue,
                 title = "6. 自动横竖屏更省手",
                 content = "开启「自动横竖屏切换」后，跟随手机方向自动进出全屏，单手看片更顺。"
             ),
             TipEntry(
-                icon = tipPipIcon,
+                icon = CupertinoIcons.Filled.Pip,
                 iconTint = iOSTeal,
                 title = "7. 小窗和画中画是两种玩法",
                 content = "播放设置中的「后台播放模式」可选择应用内小窗、系统画中画，或让两者同时生效；画中画需先授予权限。"
             ),
             TipEntry(
-                icon = tipLikeIcon,
+                icon = CupertinoIcons.Filled.HandThumbsup,
                 iconTint = iOSOrange,
                 title = "8. 双击点赞可按喜好开关",
                 content = "若你容易误触，可在播放设置关闭「双击点赞」；喜欢快操作就保持开启。"
@@ -139,28 +129,28 @@ fun TipsSettingsScreen(
         )
     }
 
-    val advancedTips = remember(tipSponsorBlockIcon, tipVersionIcon, tipEasterEggIcon, tipOpenLinksIcon) {
+    val advancedTips = remember {
         listOf(
             TipEntry(
-                icon = tipSponsorBlockIcon,
+                icon = CupertinoIcons.Default.Sparkles,
                 iconTint = iOSBlue,
                 title = "9. 空降助手能跳过片头广告",
                 content = "在设置开启「空降助手」后，可自动跳过赞助/片头片尾；也可改成仅提示不自动跳过。"
             ),
             TipEntry(
-                icon = tipVersionIcon,
+                icon = CupertinoIcons.Filled.Tag,
                 iconTint = iOSPink,
                 title = "10. 版本号连点有彩蛋",
                 content = "在设置页连续点击版本号会触发隐藏彩蛋提示，适合探索党。"
             ),
             TipEntry(
-                icon = tipEasterEggIcon,
+                icon = CupertinoIcons.Filled.Gift,
                 iconTint = iOSOrange,
                 title = "11. 趣味彩蛋可随时关闭",
                 content = "如果不想看到趣味提示，可在设置里关闭「趣味彩蛋」，界面会更克制。"
             ),
             TipEntry(
-                icon = tipOpenLinksIcon,
+                icon = CupertinoIcons.Default.Link,
                 iconTint = iOSTeal,
                 title = "12. 链接默认打开可一步到位",
                 content = "在设置中配置「默认打开链接」后，点到 B 站链接可更稳定地直达应用内页面。"

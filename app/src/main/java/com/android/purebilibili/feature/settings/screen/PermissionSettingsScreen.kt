@@ -14,6 +14,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+//  Cupertino Icons - iOS SF Symbols 风格图标
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
+import io.github.alexzhirkevich.cupertino.icons.filled.*
+import io.github.alexzhirkevich.cupertino.icons.filled.Tv
+import io.github.alexzhirkevich.cupertino.icons.filled.Location
+import io.github.alexzhirkevich.cupertino.icons.filled.XmarkCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -117,30 +124,14 @@ fun PermissionSettingsContent(
         }
     }
     
-    val networkAccessIcon = rememberSettingsInlineIcon("permission_network_access")
-    val networkStateIcon = rememberSettingsInlineIcon("permission_network_state")
-    val notificationIcon = rememberSettingsInlineIcon("permission_notification")
-    val foregroundServiceIcon = rememberSettingsInlineIcon("permission_foreground_service")
-    val mediaPlaybackServiceIcon = rememberSettingsInlineIcon("permission_media_playback_service")
-    val dlnaDiscoveryIcon = rememberSettingsInlineIcon("permission_dlna_discovery")
-    val mediaWriteIcon = rememberSettingsInlineIcon("permission_media_write")
-
     // 权限列表数据
-    val permissions = remember(
-        networkAccessIcon,
-        networkStateIcon,
-        notificationIcon,
-        foregroundServiceIcon,
-        mediaPlaybackServiceIcon,
-        dlnaDiscoveryIcon,
-        mediaWriteIcon
-    ) {
+    val permissions = remember {
         listOf(
             PermissionInfo(
                 name = "网络访问",
                 permission = Manifest.permission.INTERNET,
                 description = "加载视频、图片和用户数据",
-                icon = networkAccessIcon,
+                icon = CupertinoIcons.Default.Wifi,
                 iconTint = iOSBlue,
                 isNormal = true,
                 alwaysGranted = true
@@ -149,7 +140,7 @@ fun PermissionSettingsContent(
                 name = "网络状态",
                 permission = Manifest.permission.ACCESS_NETWORK_STATE,
                 description = "检测网络连接状态，优化加载体验",
-                icon = networkStateIcon,
+                icon = CupertinoIcons.Default.ChartBar,
                 iconTint = iOSGreen,
                 isNormal = true,
                 alwaysGranted = true
@@ -162,7 +153,7 @@ fun PermissionSettingsContent(
                     "android.permission.POST_NOTIFICATIONS"
                 },
                 description = "显示媒体播放控制通知，方便后台控制播放",
-                icon = notificationIcon,
+                icon = CupertinoIcons.Default.Bell,
                 iconTint = iOSOrange,
                 isNormal = false,
                 alwaysGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
@@ -171,7 +162,7 @@ fun PermissionSettingsContent(
                 name = "前台服务",
                 permission = Manifest.permission.FOREGROUND_SERVICE,
                 description = "支持后台播放视频时保持服务运行",
-                icon = foregroundServiceIcon,
+                icon = CupertinoIcons.Default.PlayCircle,
                 iconTint = iOSPurple,
                 isNormal = true,
                 alwaysGranted = true
@@ -180,7 +171,7 @@ fun PermissionSettingsContent(
                 name = "媒体播放服务",
                 permission = "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
                 description = "允许应用在后台继续播放视频",
-                icon = mediaPlaybackServiceIcon,
+                icon = CupertinoIcons.Default.MusicNote,
                 iconTint = iOSTeal,
                 isNormal = true,
                 alwaysGranted = true
@@ -194,7 +185,7 @@ fun PermissionSettingsContent(
                     Manifest.permission.ACCESS_FINE_LOCATION
                 },
                 description = "用于扫描和连接附近的投屏设备（DLNA）",
-                icon = dlnaDiscoveryIcon,
+                icon = CupertinoIcons.Default.Tv,
                 iconTint = iOSBlue,
                 isNormal = false,
                 alwaysGranted = false
@@ -204,7 +195,7 @@ fun PermissionSettingsContent(
                 name = "媒体文件写入",
                 permission = "scoped_storage",
                 description = "保存图片/截图时使用系统媒体库，下载导出使用系统文件夹授权",
-                icon = mediaWriteIcon,
+                icon = CupertinoIcons.Default.Folder,
                 iconTint = iOSPink,
                 isNormal = true,
                 alwaysGranted = true
@@ -392,7 +383,7 @@ private fun PermissionItem(
         // 状态指示器
         if (isGranted) {
             Icon(
-                rememberSettingsInlineIcon("permission_status_granted"),
+                CupertinoIcons.Default.CheckmarkCircle,
                 contentDescription = "已授权",
                 tint = grantedTint,
                 modifier = Modifier.size(22.dp)
@@ -400,7 +391,7 @@ private fun PermissionItem(
         } else {
             // 未授权时显示红色的 X
             Icon(
-                rememberSettingsInlineIcon("permission_status_denied"),
+                CupertinoIcons.Default.XmarkCircle,
                 contentDescription = "未授权",
                 tint = deniedTint,
                 modifier = Modifier.size(22.dp)

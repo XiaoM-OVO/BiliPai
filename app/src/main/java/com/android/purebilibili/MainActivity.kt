@@ -69,7 +69,6 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.coroutines.AppScope
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.AppFontSizePreset
-import com.android.purebilibili.core.theme.AppIconStyle
 import com.android.purebilibili.core.theme.AppUiScalePreset
 import com.android.purebilibili.core.theme.BiliPink
 import com.android.purebilibili.core.theme.LocalDisplayMetricsSnapshot
@@ -1057,9 +1056,6 @@ open class MainActivity : AppCompatActivity() {
             val androidNativeVariant by SettingsManager.getAndroidNativeVariant(context).collectAsState(
                 initial = AndroidNativeVariant.MATERIAL3
             )
-            val appIconStyle by SettingsManager.getAppIconStyle(context).collectAsState(
-                initial = AppIconStyle.LUCIDE
-            )
             val themeMode by SettingsManager.getThemeMode(context).collectAsState(initial = AppThemeMode.FOLLOW_SYSTEM)
             val darkThemeStyle by SettingsManager.getDarkThemeStyle(context).collectAsState(initial = DarkThemeStyle.DEFAULT)
             val appLanguage by SettingsManager.getAppLanguage(context).collectAsState(
@@ -1167,7 +1163,6 @@ open class MainActivity : AppCompatActivity() {
             PureBiliBiliTheme(
                 uiPreset = uiPreset,
                 androidNativeVariant = androidNativeVariant,
-                appIconStyle = appIconStyle,
                 themeMode = themeMode,
                 darkTheme = useDarkTheme,
                 dynamicColor = effectiveDynamicColor,

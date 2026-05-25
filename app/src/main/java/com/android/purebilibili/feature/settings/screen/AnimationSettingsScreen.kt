@@ -40,6 +40,8 @@ import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.core.util.LocalWindowSizeClass
 import com.android.purebilibili.feature.home.components.LiquidGlassTuning
 import com.android.purebilibili.feature.home.components.resolveLiquidGlassTuning
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import com.android.purebilibili.core.ui.components.*
 import com.android.purebilibili.core.ui.animation.staggeredEntrance
 import kotlinx.coroutines.delay
@@ -265,10 +267,7 @@ fun AnimationSettingsContent(
                     IOSGroup {
                         if (isLiquidGlassAvailable) {
 	                            IOSSwitchItem(
-	                                icon = rememberSettingsSemanticIcon(
-	                                    SettingsIconRole.BOTTOM_BAR_GLASS,
-	                                    iconKey = "animation_bottom_bar_glass_switch"
-	                                ),
+	                                icon = rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_GLASS),
                                 title = "底栏液态玻璃",
                                 subtitle = "底部导航栏的液态玻璃折射效果",
                                 checked = bottomBarLiquidGlassEnabled,
@@ -279,10 +278,7 @@ fun AnimationSettingsContent(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
-	                                        rememberSettingsSemanticIcon(
-	                                            SettingsIconRole.BOTTOM_BAR_GLASS,
-	                                            iconKey = "animation_bottom_bar_glass_strength"
-	                                        ),
+	                                        rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_GLASS),
                                         contentDescription = null,
                                         tint = iOSBlue,
                                         modifier = Modifier.size(24.dp)
@@ -337,7 +333,7 @@ fun AnimationSettingsContent(
                                             }
                                             if (isSelected) {
                                                 Icon(
-                                                    rememberSettingsInlineIcon("animation_glass_preset_selected"),
+                                                    CupertinoIcons.Default.Checkmark,
                                                     contentDescription = "已选择",
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
@@ -437,7 +433,7 @@ fun AnimationSettingsContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                rememberSettingsInlineIcon("animation_hint"),
+                                CupertinoIcons.Default.Lightbulb,
                                 contentDescription = null,
                                 tint = warningTint,
                                 modifier = Modifier.size(20.dp)

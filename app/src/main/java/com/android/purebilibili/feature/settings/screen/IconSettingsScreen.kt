@@ -40,6 +40,9 @@ import com.android.purebilibili.core.ui.AdaptiveScaffold
 import com.android.purebilibili.core.ui.AdaptiveTopAppBar
 import com.android.purebilibili.core.ui.resolveBottomSafeAreaPadding
 import com.android.purebilibili.core.ui.rememberAppBackIcon
+import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.outlined.Info
+import io.github.alexzhirkevich.cupertino.icons.filled.CheckmarkCircle
 import com.android.purebilibili.core.ui.animation.staggeredEntrance
 
 /**
@@ -197,7 +200,7 @@ fun IconSettingsContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        rememberSettingsInlineIcon("launcher_icon_settings_info"),
+                        CupertinoIcons.Outlined.Info,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(20.dp)
@@ -274,7 +277,7 @@ fun IconSettingsContent(
                                     .offset(x = 6.dp, y = 6.dp)
                             ) {
                                 Icon(
-                                    rememberSettingsInlineIcon("launcher_icon_selected"),
+                                    CupertinoIcons.Filled.CheckmarkCircle,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier
