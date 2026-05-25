@@ -2779,6 +2779,7 @@ fun VideoPlayerSection(
                     player = playerState.player,
                     onFollowClick = onToggleFollow,
                     onTripleClick = onTriple,
+                    isFollowing = isFollowed,
                     modifier = Modifier.fillMaxSize()
                 )
             }
