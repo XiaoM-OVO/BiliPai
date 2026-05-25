@@ -827,11 +827,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refresh() {
+    fun refresh(category: HomeCategory = _uiState.value.currentCategory) {
         if (_isRefreshing.value) return
         viewModelScope.launch {
             _isRefreshing.value = true
-            val refreshingCategory = _uiState.value.currentCategory
+            val refreshingCategory = category
+            syncCurrentCategoryForRefresh(refreshingCategory)
             _undoSnapshot = buildHomeRefreshUndoSnapshot(
                 refreshingCategory = refreshingCategory,
                 recommendCategoryState = _uiState.value.categoryStates[HomeCategory.RECOMMEND],
@@ -842,7 +843,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 (_uiState.value.categoryStates[HomeCategory.RECOMMEND]?.videos
                     ?: _uiState.value.videos).firstOrNull()?.bvid?.takeIf { it.isNotBlank() }
             } else null
-            val newItemsCount = fetchData(isLoadMore = false, isManualRefresh = true)
+            val newItemsCount = fetchData(
+                isLoadMore = false,
+                isManualRefresh = true,
+                category = refreshingCategory
+            )
             
             //  数据加载完成后再更新 refreshKey，避免闪烁
             //  刷新成功后显示趣味提示
@@ -881,6 +886,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
             _isRefreshing.value = false
         }
+    }
+
+    private fun syncCurrentCategoryForRefresh(category: HomeCategory) {
+        val current = _uiState.value
+        if (current.currentCategory == category) return
+        val categoryState = current.categoryStates[category] ?: CategoryContent()
+        // 下拉刷新发生在具体 Pager 页上，先同步当前分类，避免刷新态和数据请求落到旧页面。
+        _uiState.value = current.copy(
+            currentCategory = category,
+            videos = categoryState.videos,
+            liveRooms = categoryState.liveRooms,
+            followedLiveRooms = categoryState.followedLiveRooms,
+            isLoading = categoryState.isLoading,
+            error = categoryState.error
+        )
     }
 
     fun markRefreshNewItemsHandled(key: Long) {
@@ -967,8 +987,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private suspend fun fetchData(isLoadMore: Boolean, isManualRefresh: Boolean = false): Int? {
-        val currentCategory = _uiState.value.currentCategory
+    private suspend fun fetchData(
+        isLoadMore: Boolean,
+        isManualRefresh: Boolean = false,
+        category: HomeCategory = _uiState.value.currentCategory
+    ): Int? {
+        val currentCategory = category
         var refreshNewItemsCount: Int? = null
         
         // 更新当前分类为加载状态

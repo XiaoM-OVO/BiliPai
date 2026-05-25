@@ -1258,7 +1258,7 @@ fun HomeScreen(
                         
                         ComfortablePullToRefreshBox(
                             isRefreshing = isRefreshing && state.currentCategory == category,
-                            onRefresh = { viewModel.refresh() },
+                            onRefresh = { viewModel.refresh(category) },
                             state = pullRefreshState,
                             modifier = Modifier.fillMaxSize(),
                              //  不同原生外观使用不同下拉刷新指示器，位移策略仍由 policy 统一控制。

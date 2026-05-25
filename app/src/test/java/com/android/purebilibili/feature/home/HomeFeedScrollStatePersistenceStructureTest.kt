@@ -57,6 +57,17 @@ class HomeFeedScrollStatePersistenceStructureTest {
         assertFalse(videoItemSource.contains("model = File(feedAtmosphereImagePath)"))
     }
 
+    @Test
+    fun `home pager page refresh uses page category instead of stale current state`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/HomeScreen.kt")
+        val pagerPageSource = source
+            .substringAfter("HorizontalPager(")
+            .substringBefore("// Close HorizontalPager lambda")
+
+        assertTrue(pagerPageSource.contains("onRefresh = { viewModel.refresh(category) }"))
+        assertFalse(pagerPageSource.contains("onRefresh = { viewModel.refresh() }"))
+    }
+
     private fun loadSource(path: String): String {
         val normalizedPath = path.removePrefix("app/")
         val sourceFile = listOf(
