@@ -211,6 +211,97 @@ class TopTabStylePolicyTest {
     }
 
     @Test
+    fun `miuix top panel reserves extra content gap below category tabs`() {
+        val ios = resolveHomeTopPresetStyle(
+            uiPreset = UiPreset.IOS,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3,
+            labelMode = 2
+        )
+        val material3 = resolveHomeTopPresetStyle(
+            uiPreset = UiPreset.MD3,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3,
+            labelMode = 2
+        )
+        val miuix = resolveHomeTopPresetStyle(
+            uiPreset = UiPreset.MD3,
+            androidNativeVariant = AndroidNativeVariant.MIUIX,
+            labelMode = 2
+        )
+
+        assertEquals(5.dp, ios.reservedContentBottomGap)
+        assertEquals(5.dp, material3.reservedContentBottomGap)
+        assertEquals(12.dp, miuix.reservedContentBottomGap)
+        assertEquals(
+            12.dp,
+            resolveHomeTopReservedContentBottomGap(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MIUIX
+            )
+        )
+    }
+
+    @Test
+    fun `miuix top settings button follows action button metrics while other presets keep existing size`() {
+        assertEquals(
+            40.dp,
+            resolveHomeTopSettingsButtonSize(
+                uiPreset = UiPreset.IOS,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3
+            )
+        )
+        assertEquals(
+            40.dp,
+            resolveHomeTopSettingsButtonSize(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3
+            )
+        )
+        assertEquals(
+            44.dp,
+            resolveHomeTopSettingsButtonSize(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MIUIX
+            )
+        )
+        assertEquals(
+            20.dp,
+            resolveHomeTopSettingsIconSize(
+                uiPreset = UiPreset.IOS,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3
+            )
+        )
+        assertEquals(
+            20.dp,
+            resolveHomeTopSettingsIconSize(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3
+            )
+        )
+        assertEquals(
+            22.dp,
+            resolveHomeTopSettingsIconSize(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MIUIX
+            )
+        )
+    }
+
+    @Test
+    fun `miuix category action trailing padding aligns with unified top settings center`() {
+        val miuix = resolveHomeTopPresetStyle(
+            uiPreset = UiPreset.MD3,
+            androidNativeVariant = AndroidNativeVariant.MIUIX,
+            labelMode = 2
+        )
+
+        assertEquals(4.dp, resolveMiuixTopTabRowHorizontalPadding())
+        assertEquals(
+            5.dp,
+            resolveMiuixTopTabActionTrailingPadding(miuix.unifiedPanelInnerPadding)
+        )
+    }
+
+    @Test
     fun `clicking selected top tab scrolls to top while other tabs select`() {
         assertEquals(
             TopTabClickAction.SCROLL_TO_TOP,

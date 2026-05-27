@@ -1630,6 +1630,25 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
+    fun `home screen passes android native variant into top reserved padding`() {
+        val homeScreenSource = loadSource("app/src/main/java/com/android/purebilibili/feature/home/HomeScreen.kt")
+        val reservedPaddingCall = homeScreenSource
+            .substringAfter("val listTopPadding = resolveHomeTopReservedListPadding(")
+            .substringBefore(")")
+
+        assertTrue(reservedPaddingCall.contains("androidNativeVariant = androidNativeVariant"))
+    }
+
+    @Test
+    fun `home header settings button uses preset aware sizing`() {
+        val headerSource = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/iOSHomeHeader.kt")
+
+        assertTrue(headerSource.contains(".size(resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant))"))
+        assertTrue(headerSource.contains("modifier = Modifier.size(resolveHomeTopSettingsIconSize(uiPreset, androidNativeVariant))"))
+        assertFalse(headerSource.contains(".size(resolveHomeTopSettingsButtonSize())"))
+    }
+
+    @Test
     fun `skin top tab content color follows skin atmosphere brightness`() {
         assertEquals(
             Color.White.copy(alpha = 0.98f),

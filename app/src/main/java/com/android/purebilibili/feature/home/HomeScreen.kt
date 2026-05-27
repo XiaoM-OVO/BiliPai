@@ -1001,21 +1001,27 @@ fun HomeScreen(
             isLiquidGlassEnabled = false
         )
     }
-    val searchBarHeightDp = resolveHomeTopSearchBarHeight(uiPreset)
+    val searchBarHeightDp = resolveHomeTopSearchBarHeight(
+        uiPreset = uiPreset,
+        androidNativeVariant = androidNativeVariant
+    )
     val tabRowHeightDp = resolveHomeTopTabRowHeight(
         isTabFloating = topTabStyle.floating,
         uiPreset = uiPreset,
+        androidNativeVariant = androidNativeVariant,
         labelMode = homeSettings.topTabLabelMode
     )
     val searchCollapseDistanceDp = resolveHomeTopSearchCollapseDistance(
         searchBarHeight = searchBarHeightDp,
-        uiPreset = uiPreset
+        uiPreset = uiPreset,
+        androidNativeVariant = androidNativeVariant
     )
     val listTopPadding = resolveHomeTopReservedListPadding(
         statusBarHeight = statusBarHeight,
         searchBarHeight = searchBarHeightDp,
         tabRowHeight = tabRowHeightDp,
-        uiPreset = uiPreset
+        uiPreset = uiPreset,
+        androidNativeVariant = androidNativeVariant
     )
     
     // Pixels

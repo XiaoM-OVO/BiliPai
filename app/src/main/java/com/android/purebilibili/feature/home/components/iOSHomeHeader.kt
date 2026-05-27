@@ -494,11 +494,29 @@ internal fun resolveHomeTopEdgeButtonShape(
 
 internal fun resolveHomeTopAvatarOuterSize(): Dp = 40.dp
 
-internal fun resolveHomeTopAvatarInnerSize(): Dp = resolveHomeTopSettingsButtonSize()
+internal fun resolveHomeTopAvatarInnerSize(): Dp = 40.dp
 
-internal fun resolveHomeTopSettingsButtonSize(): Dp = 40.dp
+internal fun resolveHomeTopSettingsButtonSize(
+    uiPreset: UiPreset = UiPreset.IOS,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
+): Dp {
+    return if (uiPreset == UiPreset.MD3 && androidNativeVariant == AndroidNativeVariant.MIUIX) {
+        resolveHomeTopPresetStyle(uiPreset, androidNativeVariant, labelMode = 2).actionButtonSizeDocked
+    } else {
+        40.dp
+    }
+}
 
-internal fun resolveHomeTopSettingsIconSize(): Dp = 20.dp
+internal fun resolveHomeTopSettingsIconSize(
+    uiPreset: UiPreset = UiPreset.IOS,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
+): Dp {
+    return if (uiPreset == UiPreset.MD3 && androidNativeVariant == AndroidNativeVariant.MIUIX) {
+        resolveHomeTopPresetStyle(uiPreset, androidNativeVariant, labelMode = 2).actionIconSizeDocked
+    } else {
+        20.dp
+    }
+}
 
 internal fun resolveHomeTopEdgeControlGap(
     uiPreset: UiPreset = UiPreset.IOS,
@@ -550,6 +568,13 @@ internal fun resolveHomeTopUnifiedPanelCornerRadius(
 ): Dp {
     if (collapsedIntoStatusBar) return 0.dp
     return resolveHomeTopPresetStyle(uiPreset, androidNativeVariant, labelMode = 2).unifiedPanelCornerRadius
+}
+
+internal fun resolveHomeTopReservedContentBottomGap(
+    uiPreset: UiPreset = UiPreset.IOS,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
+): Dp {
+    return resolveHomeTopPresetStyle(uiPreset, androidNativeVariant, labelMode = 2).reservedContentBottomGap
 }
 
 internal fun resolveHomeTopEmbeddedTabHorizontalPadding(uiPreset: UiPreset = UiPreset.IOS): Dp {
@@ -628,7 +653,7 @@ internal fun resolveHomeTopReservedListPadding(
             tabRowHeight +
             (resolveHomeTopUnifiedPanelInnerPadding(uiPreset, androidNativeVariant) * 2) +
             resolveHomeTopSearchToTabsSpacing(uiPreset, androidNativeVariant) +
-            5.dp
+            resolveHomeTopReservedContentBottomGap(uiPreset, androidNativeVariant)
     } else {
         searchBarHeight + resolveHomeTopSearchToTabsSpacing(uiPreset, androidNativeVariant) + tabRowHeight
     }
@@ -2518,7 +2543,7 @@ fun iOSHomeHeader(
 
                             Box(
                                 modifier = Modifier
-                                    .size(resolveHomeTopSettingsButtonSize())
+                                    .size(resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant))
                                     .clip(edgeButtonShape)
                                     .then(
                                         if (useUnifiedTopPanel) {
@@ -2593,7 +2618,7 @@ fun iOSHomeHeader(
                                     } else {
                                         topForegroundColor.copy(alpha = topActionIconAlpha)
                                     },
-                                    modifier = Modifier.size(resolveHomeTopSettingsIconSize())
+                                    modifier = Modifier.size(resolveHomeTopSettingsIconSize(uiPreset, androidNativeVariant))
                                 )
                             }
                         }
