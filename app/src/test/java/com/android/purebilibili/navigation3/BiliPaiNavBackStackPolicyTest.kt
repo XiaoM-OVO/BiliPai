@@ -12,7 +12,7 @@ class BiliPaiNavBackStackPolicyTest {
     @Test
     fun initialBackStack_usesOnboardingWhenRequired() {
         assertEquals(
-            listOf(BiliPaiNavKey.Unknown("onboarding")),
+            listOf(BiliPaiNavKey.Onboarding),
             resolveInitialBiliPaiBackStack(
                 firstRoute = ScreenRoutes.Home.route,
                 onboardingRequired = true

@@ -5,7 +5,7 @@ internal fun resolveInitialBiliPaiBackStack(
     onboardingRequired: Boolean
 ): List<BiliPaiNavKey> {
     if (onboardingRequired) {
-        return listOf(BiliPaiNavKey.Unknown("onboarding"))
+        return listOf(BiliPaiNavKey.Onboarding)
     }
     return listOf(BiliPaiNavKey.MainHost)
 }
