@@ -99,6 +99,8 @@ import com.android.purebilibili.feature.common.resolveIndexedVideoLazyKey
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewDialog
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextContent
 import com.android.purebilibili.feature.video.state.VideoPlayerState
+import com.android.purebilibili.feature.video.note.VideoNoteEditorDocument
+import com.android.purebilibili.feature.video.note.buildVideoNoteShareText
 import com.android.purebilibili.feature.video.progress.PbpProgressData
 import com.android.purebilibili.feature.video.ui.components.CommentSortFilterBar
 import com.android.purebilibili.feature.video.ui.components.CollectionRow
@@ -524,10 +526,10 @@ private fun CinemaMetaPanel(
     onCreateNoteDraftFromAiSummary: () -> Unit,
     onOpenVideoNoteEditor: () -> Unit,
     onCloseVideoNoteEditor: () -> Unit,
-    onVideoNoteDocumentChange: (com.android.purebilibili.feature.video.note.VideoNoteEditorDocument) -> Unit,
+    onVideoNoteDocumentChange: (VideoNoteEditorDocument) -> Unit,
     onInsertVideoNoteTimestamp: () -> Unit,
     onVideoNoteTimestampClick: (Long) -> Unit,
-    onSaveVideoNote: (com.android.purebilibili.feature.video.note.VideoNoteEditorDocument) -> Unit,
+    onSaveVideoNote: (VideoNoteEditorDocument) -> Unit,
     onDeleteVideoNote: () -> Unit,
     onRetryVideoNote: () -> Unit
 ) {
@@ -538,6 +540,19 @@ private fun CinemaMetaPanel(
     }
     var showCollectionSheet by rememberSaveable(success.info.bvid) { mutableStateOf(false) }
     var confirmDeleteNote by rememberSaveable(success.info.bvid) { mutableStateOf(false) }
+    val onShareVideoNote: (VideoNoteEditorDocument, Boolean) -> Unit = { document, isDraft ->
+        ShareUtils.shareText(
+            context = context,
+            subject = document.title.ifBlank { success.info.title },
+            text = buildVideoNoteShareText(
+                videoTitle = success.info.title,
+                bvid = success.info.bvid,
+                document = document,
+                isDraft = isDraft
+            ),
+            chooserTitle = "分享视频笔记"
+        )
+    }
 
     success.info.ugc_season?.let { season ->
         if (showCollectionSheet) {
@@ -676,6 +691,7 @@ private fun CinemaMetaPanel(
                             onOpenVideoNoteEditor = onOpenVideoNoteEditor,
                             onRetryVideoNote = onRetryVideoNote,
                             onDeleteVideoNoteClick = { confirmDeleteNote = true },
+                            onShareVideoNote = { document -> onShareVideoNote(document, false) },
                             onPublicVideoNoteClick = { _, url ->
                                 if (url.isNotBlank()) onOpenBilibiliLink?.invoke(url)
                             }
@@ -712,6 +728,7 @@ private fun CinemaMetaPanel(
         onDocumentChange = onVideoNoteDocumentChange,
         onInsertTimestamp = onInsertVideoNoteTimestamp,
         onTimestampClick = onVideoNoteTimestampClick,
+        onShare = { document -> onShareVideoNote(document, success.videoNoteState.editorFromAiSummary) },
         onSave = onSaveVideoNote
     )
 
@@ -794,6 +811,7 @@ private fun CinemaVideoIntroSection(
     onOpenVideoNoteEditor: () -> Unit = {},
     onRetryVideoNote: () -> Unit = {},
     onDeleteVideoNoteClick: () -> Unit = {},
+    onShareVideoNote: (VideoNoteEditorDocument) -> Unit = {},
     onPublicVideoNoteClick: (Long, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
@@ -851,6 +869,7 @@ private fun CinemaVideoIntroSection(
             onCreateOrEditClick = onOpenVideoNoteEditor,
             onRetryClick = onRetryVideoNote,
             onDeleteClick = onDeleteVideoNoteClick,
+            onShareClick = onShareVideoNote,
             onPublicNoteClick = onPublicVideoNoteClick
         )
     }

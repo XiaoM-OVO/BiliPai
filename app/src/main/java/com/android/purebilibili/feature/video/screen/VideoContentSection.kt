@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.purebilibili.core.ui.common.copyOnLongPress
+import com.android.purebilibili.core.util.ShareUtils
 import com.android.purebilibili.core.ui.rememberAppCommentIcon
 import com.android.purebilibili.core.ui.rememberAppChevronUpIcon
 import com.android.purebilibili.core.ui.rememberAppPlayIcon
@@ -97,6 +98,7 @@ import com.android.purebilibili.feature.video.ui.section.VideoNoteDeleteConfirmD
 import com.android.purebilibili.feature.video.ui.section.VideoNoteEditorSheet
 import com.android.purebilibili.feature.video.note.VideoNoteEditorDocument
 import com.android.purebilibili.feature.video.note.VideoNoteUiState
+import com.android.purebilibili.feature.video.note.buildVideoNoteShareText
 import kotlin.math.abs
 
 internal fun shouldShowDanmakuSendInput(isPlayerCollapsed: Boolean): Boolean = !isPlayerCollapsed
@@ -347,6 +349,7 @@ fun VideoContentSection(
     onSelectedTabChange: (Int) -> Unit = {},
     onIntroScrollStateChange: (Int, Int) -> Unit = { _, _ -> }
 ) {
+    val context = LocalContext.current
     val tabs = listOf("简介", "评论 $replyCount")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
@@ -387,6 +390,19 @@ fun VideoContentSection(
     var showCollectionSheet by remember { mutableStateOf(false) }
     var showDanmakuSettings by remember { mutableStateOf(false) }
     var confirmDeleteNote by remember { mutableStateOf(false) }
+    val onShareVideoNote: (VideoNoteEditorDocument, Boolean) -> Unit = { document, isDraft ->
+        ShareUtils.shareText(
+            context = context,
+            subject = document.title.ifBlank { info.title },
+            text = buildVideoNoteShareText(
+                videoTitle = info.title,
+                bvid = info.bvid,
+                document = document,
+                isDraft = isDraft
+            ),
+            chooserTitle = "分享视频笔记"
+        )
+    }
     val uiPreset = LocalUiPreset.current
     val tabSwitchAnimationSpec = remember(uiPreset) {
         resolveVideoContentTabSwitchAnimationSpec(uiPreset)
@@ -500,6 +516,7 @@ fun VideoContentSection(
                         onOpenVideoNoteEditor = onOpenVideoNoteEditor,
                         onRetryVideoNote = onRetryVideoNote,
                         onDeleteVideoNoteClick = { confirmDeleteNote = true },
+                        onShareVideoNote = { document -> onShareVideoNote(document, false) },
                         onPublicVideoNoteClick = onPublicVideoNoteClick,
                         bgmInfo = bgmInfo,
                         bgmInfoList = bgmInfoList,
@@ -599,6 +616,7 @@ fun VideoContentSection(
             onDocumentChange = onVideoNoteDocumentChange,
             onInsertTimestamp = onInsertVideoNoteTimestamp,
             onTimestampClick = onVideoNoteTimestampClick,
+            onShare = { document -> onShareVideoNote(document, videoNoteState.editorFromAiSummary) },
             onSave = onSaveVideoNote
         )
 
@@ -659,6 +677,7 @@ private fun VideoIntroTab(
     onOpenVideoNoteEditor: () -> Unit = {},
     onRetryVideoNote: () -> Unit = {},
     onDeleteVideoNoteClick: () -> Unit = {},
+    onShareVideoNote: (VideoNoteEditorDocument) -> Unit = {},
     onPublicVideoNoteClick: (Long, String) -> Unit = { _, _ -> },
     bgmInfo: BgmInfo? = null,
     bgmInfoList: List<BgmInfo> = emptyList(),
@@ -712,6 +731,7 @@ private fun VideoIntroTab(
                 onOpenVideoNoteEditor = onOpenVideoNoteEditor,
                 onRetryVideoNote = onRetryVideoNote,
                 onDeleteVideoNoteClick = onDeleteVideoNoteClick,
+                onShareVideoNote = onShareVideoNote,
                 onPublicVideoNoteClick = onPublicVideoNoteClick,
                 bgmInfo = bgmInfo,
                 bgmInfoList = bgmInfoList,
@@ -1035,6 +1055,7 @@ private fun VideoHeaderContent(
     onOpenVideoNoteEditor: () -> Unit = {},
     onRetryVideoNote: () -> Unit = {},
     onDeleteVideoNoteClick: () -> Unit = {},
+    onShareVideoNote: (VideoNoteEditorDocument) -> Unit = {},
     onPublicVideoNoteClick: (Long, String) -> Unit = { _, _ -> },
     bgmInfo: BgmInfo? = null,
     bgmInfoList: List<BgmInfo> = emptyList(),
@@ -1118,6 +1139,7 @@ private fun VideoHeaderContent(
             onCreateOrEditClick = onOpenVideoNoteEditor,
             onRetryClick = onRetryVideoNote,
             onDeleteClick = onDeleteVideoNoteClick,
+            onShareClick = onShareVideoNote,
             onPublicNoteClick = onPublicVideoNoteClick,
             modifier = Modifier.padding(bottom = 8.dp)
         )

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FormatColorFill
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -67,6 +68,7 @@ fun VideoNoteCard(
     onCreateOrEditClick: () -> Unit,
     onRetryClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onShareClick: (VideoNoteEditorDocument) -> Unit,
     onPublicNoteClick: (Long, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -117,7 +119,10 @@ fun VideoNoteCard(
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Button(
                     onClick = onCreateOrEditClick,
                     enabled = isLoggedIn && !noteState.forbidNoteEntrance && !noteState.saving
@@ -130,7 +135,14 @@ fun VideoNoteCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(if (noteState.privateNoteDocument == null) "新建" else "编辑")
                 }
-                if (noteState.privateNoteDocument != null) {
+                noteState.privateNoteDocument?.let { privateDocument ->
+                    OutlinedButton(
+                        onClick = { onShareClick(privateDocument) }
+                    ) {
+                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("分享")
+                    }
                     OutlinedButton(
                         onClick = onDeleteClick,
                         enabled = !noteState.deleting
@@ -182,6 +194,7 @@ fun VideoNoteEditorSheet(
     onDocumentChange: (VideoNoteEditorDocument) -> Unit,
     onInsertTimestamp: () -> Unit,
     onTimestampClick: (Long) -> Unit,
+    onShare: (VideoNoteEditorDocument) -> Unit,
     onSave: (VideoNoteEditorDocument) -> Unit
 ) {
     if (!noteState.editorVisible) return
@@ -269,6 +282,23 @@ fun VideoNoteEditorSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
+                OutlinedButton(
+                    onClick = {
+                        val document = markdownToDocument(
+                            title = title,
+                            markdown = richTextState.toMarkdown(),
+                            timestamps = noteState.editorDocument.blocks.filterIsInstance<VideoNoteBlock.Timestamp>()
+                        )
+                        onDocumentChange(document)
+                        onShare(document)
+                    },
+                    enabled = !noteState.saving
+                ) {
+                    Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("分享")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = onDismiss) {
                     Text("取消")
                 }
