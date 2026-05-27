@@ -3,7 +3,8 @@ package com.android.purebilibili.feature.video.ui.overlay
 import android.graphics.Color as AndroidColor
 import android.os.SystemClock
 import android.view.ViewGroup
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,9 +40,14 @@ import kotlinx.coroutines.isActive
 @Composable
 fun LiveDanmakuOverlay(
     danmakuFlow: SharedFlow<LiveDanmakuItem>,
+    displayArea: Float = 1f,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val safeDisplayArea = displayArea
+        .takeIf { it.isFinite() }
+        ?.coerceIn(0.25f, 1f)
+        ?: 1f
     
     // 使用稳定的状态管理
     var controller by remember { mutableStateOf<DanmakuController?>(null) }
@@ -81,7 +87,9 @@ fun LiveDanmakuOverlay(
                 }
             }
         },
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxWidth()
+            .fillMaxHeight(safeDisplayArea),
         update = {
             try {
                 // 确保控制器正在运行
