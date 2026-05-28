@@ -30,4 +30,3 @@ body:
       描述此功能的好处及其原因。
   validations:
     required: true
-<!-- 改自FCL的is模板，如有冒犯，还请原谅 -->
