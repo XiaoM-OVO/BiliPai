@@ -69,18 +69,7 @@ private fun spaceForwardTransform(): ContentTransform {
 }
 
 private fun disabledVideoDirectionReturnTransform(directionSign: Int): ContentTransform {
-    return (
-        slideInHorizontally(
-            animationSpec = tween(
-                durationMillis = NAV3_DISABLED_VIDEO_RETURN_MILLIS,
-                easing = FastOutSlowInEasing
-            ),
-            initialOffsetX = { width -> -directionSign * width / 3 }
-        ) + fadeIn(
-            animationSpec = tween(NAV3_DISABLED_VIDEO_RETURN_MILLIS),
-            initialAlpha = 0.94f
-        )
-    ) togetherWith
+    return EnterTransition.None togetherWith
         (
             slideOutHorizontally(
                 animationSpec = tween(

@@ -7,15 +7,25 @@ import kotlin.test.assertTrue
 class BiliPaiNavContentTransformPolicyStructureTest {
 
     @Test
-    fun disabledVideoDirectionalReturnMovesTargetAndOutgoingPagesHorizontally() {
+    fun disabledVideoDirectionalReturnKeepsTargetPageImmediatelyVisible() {
         val source = contentTransformPolicySource()
         val returnFunctionStart = source.indexOf("private fun disabledVideoDirectionReturnTransform")
         val returnFunctionEnd = source.length
         val returnFunction = source.substring(returnFunctionStart, returnFunctionEnd)
 
-        assertTrue(returnFunction.contains("slideInHorizontally("))
-        assertTrue(returnFunction.contains("initialOffsetX = { width -> -directionSign * width / 3 }"))
+        assertTrue(returnFunction.contains("EnterTransition.None togetherWith"))
+        assertTrue(returnFunction.contains("ExitTransition.None").not())
+    }
+
+    @Test
+    fun disabledVideoDirectionalReturnMovesOnlyOutgoingPageHorizontally() {
+        val source = contentTransformPolicySource()
+        val returnFunctionStart = source.indexOf("private fun disabledVideoDirectionReturnTransform")
+        val returnFunctionEnd = source.length
+        val returnFunction = source.substring(returnFunctionStart, returnFunctionEnd)
+
         assertTrue(returnFunction.contains("slideOutHorizontally("))
+        assertTrue(returnFunction.contains("slideInHorizontally(").not())
     }
 
     @Test
