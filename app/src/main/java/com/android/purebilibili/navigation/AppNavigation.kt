@@ -759,6 +759,9 @@ fun AppNavigation(
         // 2. 始终显示模式 -> 始终显示
         // 3. 上滑隐藏模式 -> 由子页面通过 LocalSetBottomBarVisible 控制，初始为 true
         var isBottomBarVisible by remember { mutableStateOf(true) }
+        var suppressBottomBarHideRequestsUntilMillis by remember {
+            androidx.compose.runtime.mutableLongStateOf(0L)
+        }
         
         // 根据模式强制重置状态（防止模式切换后状态卡死）
         LaunchedEffect(bottomBarVisibilityMode) {
@@ -766,8 +769,8 @@ fun AppNavigation(
         }
 
         // [New Fix] 切换到可显示底栏的主入口页面时，强制恢复底栏可见性
-        LaunchedEffect(currentRoute) {
-            if (isBottomBarDestination) {
+        LaunchedEffect(currentRoute, shouldDeferBottomBarReveal) {
+            if (isBottomBarDestination && !shouldDeferBottomBarReveal) {
                 isBottomBarVisible = true
             }
         }
@@ -783,7 +786,13 @@ fun AppNavigation(
             (bottomBarVisibilityMode == SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE || isBottomBarVisible)
 
         val setBottomBarVisible: (Boolean) -> Unit = remember {
-            { visible ->
+            bottomBarSetter@{ visible: Boolean ->
+                if (
+                    !visible &&
+                    SystemClock.uptimeMillis() < suppressBottomBarHideRequestsUntilMillis
+                ) {
+                    return@bottomBarSetter
+                }
                 if (isBottomBarVisible != visible) {
                     isBottomBarVisible = visible
                 }
@@ -807,7 +816,11 @@ fun AppNavigation(
                         isQuickReturnFromDetail = navigation3ReturnSession.isQuickReturnFromDetail
                     )
                 )
-                setBottomBarVisible(true)
+                isBottomBarVisible = true
+                suppressBottomBarHideRequestsUntilMillis =
+                    SystemClock.uptimeMillis() + resolveVideoReturnBottomBarHideSuppressionMs(
+                        cardTransitionEnabled = cardTransitionEnabled
+                    )
                 navigation3ReturnSession = navigation3ReturnSession.clearReturning()
             }
         }

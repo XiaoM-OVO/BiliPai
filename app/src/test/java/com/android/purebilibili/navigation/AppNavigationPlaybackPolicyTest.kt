@@ -153,4 +153,16 @@ class AppNavigationPlaybackPolicyTest {
             )
         )
     }
+
+    @Test
+    fun videoReturnBottomBarHideSuppression_matchesHomeNavigationResetTiming() {
+        assertEquals(
+            80L,
+            resolveVideoReturnBottomBarHideSuppressionMs(cardTransitionEnabled = false)
+        )
+        assertEquals(
+            200L,
+            resolveVideoReturnBottomBarHideSuppressionMs(cardTransitionEnabled = true)
+        )
+    }
 }

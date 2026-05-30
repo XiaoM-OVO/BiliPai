@@ -42,6 +42,12 @@ internal fun resolveVideoReturnBottomBarRestoreDelayMs(
     return 380L
 }
 
+internal fun resolveVideoReturnBottomBarHideSuppressionMs(
+    cardTransitionEnabled: Boolean
+): Long {
+    return if (cardTransitionEnabled) 200L else 80L
+}
+
 internal fun shouldClearReturningStateWhenDisposingVideoDestination(
     stillInVideoRoute: Boolean
 ): Boolean {
