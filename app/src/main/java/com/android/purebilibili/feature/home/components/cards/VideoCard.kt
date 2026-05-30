@@ -68,7 +68,7 @@ import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransit
 import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.resolveVideoSharedTransitionOwnership
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
-import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
+import com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey
 import com.android.purebilibili.feature.home.resolveHomeCardEnterAnimationEnabledAtMount
 import com.android.purebilibili.feature.home.resolveHomeCardInfoSurfaceAppearance
 import com.android.purebilibili.feature.home.rememberHomeGlassPillColors
@@ -434,7 +434,7 @@ fun ElegantVideoCard(
                 transitionEnabled = transitionEnabled
             )
         }
-        val useCardShellSharedBounds = coverSharedEnabled && !effectiveSharedElementSourceRoute.isNullOrBlank()
+        val useCoverOnlySharedBounds = coverSharedEnabled && !effectiveSharedElementSourceRoute.isNullOrBlank()
         val connectedCardShape = remember(cardCornerRadius) { RoundedCornerShape(cardCornerRadius) }
         val cardContainerModifier = if (infoSurfaceAppearance.useTintedSurface) {
             Modifier
@@ -449,34 +449,12 @@ fun ElegantVideoCard(
         } else {
             Modifier.fillMaxWidth()
         }
-        val cardShellModifier = if (useCardShellSharedBounds) {
-            with(requireNotNull(sharedTransitionScope)) {
-                Modifier.sharedBounds(
-                    sharedContentState = rememberSharedContentState(
-                        key = videoCardShellSharedElementKey(
-                            video.bvid,
-                            sourceRoute = effectiveSharedElementSourceRoute
-                        )
-                    ),
-                    animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                    boundsTransform = { _, _ ->
-                        tween(
-                            durationMillis = homeSharedTransitionMotionSpec.durationMillis,
-                            easing = homeSharedTransitionMotionSpec.easing
-                        )
-                    },
-                    clipInOverlayDuringTransition = OverlayClip(connectedCardShape)
-                )
-            }
-        } else {
-            Modifier
-        }
         Column(
             modifier = cardContainerModifier
-                .then(cardShellModifier)
         ) {
             val metadataSharedEnabled = sharedTransitionOwnership.useMetadataSharedBounds
-        
+            //  封面单独 sharedBounds 处理播放器 ↔ 封面映射（Shell 已移除，不再与 metadata 冲突）
+            val useCoverOnlySharedBounds = sharedTransitionOwnership.useCoverSharedBounds && !effectiveSharedElementSourceRoute.isNullOrBlank()
         //  [性能优化] 封面圆角形状缓存（避免重组时重复创建）
         val coverShape = remember(
             cardCornerRadius,
@@ -501,7 +479,7 @@ fun ElegantVideoCard(
             }
         }
 
-        val coverModifier = if (sharedTransitionOwnership.useCoverSharedBounds && !useCardShellSharedBounds) {
+        val coverModifier = if (useCoverOnlySharedBounds) {
             with(requireNotNull(sharedTransitionScope)) {
                 Modifier.sharedBounds(
                     sharedContentState = rememberSharedContentState(
@@ -525,10 +503,10 @@ fun ElegantVideoCard(
         }
 
         Box(
-            modifier = coverModifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(VIDEO_SHARED_COVER_ASPECT_RATIO)
-                // [性能优化] 使用 shadow(clip = true) 合并裁剪和阴影层，避免创建额外的 GraphicsLayer
+                //  [修复] 阴影从 sharedBounds 内部移出，避免返回动画时 GraphicsLayer 延迟创建导致阴影滞后
                 .shadow(
                     elevation = if (infoSurfaceAppearance.useTintedSurface) 0.dp else coverShadowElevation,
                     shape = coverShape,
@@ -564,23 +542,27 @@ fun ElegantVideoCard(
                     )
                 }
         ) {
-            // 🚀 [性能优化] 使用从父级传入的 isDataSaverActive，避免每个卡片重复计算
-            val imageWidth = if (isDataSaverActive) 240 else 360
-            val imageHeight = if (isDataSaverActive) 150 else 225
-            
-            // 封面图 -  [性能优化] 降低图片尺寸
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(coverUrl)
-                    .size(imageWidth, imageHeight)  // 省流量时使用更小尺寸
-                    .crossfade(100)  //  缩短淡入时间
-                    .memoryCacheKey(coverCacheKey)
-                    .diskCacheKey(coverCacheKey)
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            //  [修复] sharedBounds 仅包裹封面图本身，渐变遮罩/统计标签等目标独有元素留在外部，
+            //  避免返回动画期间这些元素依赖 sharedBounds 叠加层初始化导致视觉滞后。
+            Box(modifier = coverModifier.fillMaxSize()) {
+                // 🚀 [性能优化] 使用从父级传入的 isDataSaverActive，避免每个卡片重复计算
+                val imageWidth = if (isDataSaverActive) 240 else 360
+                val imageHeight = if (isDataSaverActive) 150 else 225
+
+                // 封面图 -  [性能优化] 降低图片尺寸
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(coverUrl)
+                        .size(imageWidth, imageHeight)  // 省流量时使用更小尺寸
+                        .crossfade(100)  //  缩短淡入时间
+                        .memoryCacheKey(coverCacheKey)
+                        .diskCacheKey(coverCacheKey)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
             if (premiumBadgeLabel != null) {
                 HomeVideoBadgePill(
@@ -601,8 +583,7 @@ fun ElegantVideoCard(
                     )
                 }
             }
-            
-            
+
             //  底部渐变遮罩
 
             if (scrollLitePolicy.showCoverGradientMask) {

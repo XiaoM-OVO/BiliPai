@@ -65,7 +65,7 @@ import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RAT
 import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
-import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
+import com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey
 import com.android.purebilibili.core.util.CardPositionManager
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.HapticType
@@ -231,7 +231,7 @@ fun CinematicVideoCard(
                 with(requireNotNull(sharedTransitionScope)) {
                     coverModifier.sharedBounds(
                         sharedContentState = rememberSharedContentState(
-                            key = videoCardShellSharedElementKey(
+                            key = videoCoverSharedElementKey(
                                 video.bvid,
                                 sourceRoute = effectiveSharedElementSourceRoute
                             )

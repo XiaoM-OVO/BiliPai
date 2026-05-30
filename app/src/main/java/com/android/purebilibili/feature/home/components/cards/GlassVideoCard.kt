@@ -56,7 +56,7 @@ import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransitionMotionSpec
-import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
+import com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey
 import com.android.purebilibili.feature.home.resolveHomeCardEnterAnimationEnabledAtMount
 import com.android.purebilibili.feature.home.rememberHomeGlassPillColors
 import com.android.purebilibili.feature.home.resolveHomeGlassCoverPillBaseColor
@@ -201,7 +201,7 @@ fun GlassVideoCard(
             Modifier
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(
-                        key = videoCardShellSharedElementKey(
+                        key = videoCoverSharedElementKey(
                             video.bvid,
                             sourceRoute = effectiveSharedElementSourceRoute
                         )
