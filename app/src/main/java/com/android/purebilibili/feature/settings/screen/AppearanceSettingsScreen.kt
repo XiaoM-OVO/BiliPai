@@ -62,7 +62,8 @@ import com.android.purebilibili.core.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.android.purebilibili.core.ui.components.*
-import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import com.android.purebilibili.core.ui.animation.EntranceGroup
+import com.android.purebilibili.core.ui.animation.entrance
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.HueSlider
@@ -237,11 +238,7 @@ fun AppearanceSettingsContent(
     val listState = rememberLazyListState()
     val focusRequest by SettingsSearchFocusController.request.collectAsState()
     // Animation Trigger
-    var isVisible by remember { mutableStateOf(false) }
     val displayModeTint = rememberAdaptiveSemanticIconTint(iOSBlue)
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
 
     val configuration = LocalConfiguration.current
     val displayMetricsSnapshot = LocalDisplayMetricsSnapshot.current
@@ -258,9 +255,6 @@ fun AppearanceSettingsContent(
         resolveDeviceUiProfile(
             widthSizeClass = windowSizeClass.widthSizeClass
         )
-    }
-    val effectiveMotionTier = remember(deviceUiProfile.motionTier) {
-        resolveSettingsEntranceMotionTier(deviceUiProfile.motionTier)
     }
     val scope = rememberCoroutineScope()
     val themeSectionTitle = stringResource(R.string.appearance_theme_color_section)
@@ -465,6 +459,7 @@ fun AppearanceSettingsContent(
             }
     }
 
+    EntranceGroup {
     LazyColumn(
         state = listState,
         modifier = modifier
@@ -475,12 +470,12 @@ fun AppearanceSettingsContent(
         
         //  主题与颜色
         item { 
-            Box(modifier = Modifier.staggeredEntrance(0, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSSectionTitle(themeSectionTitle) 
             }
         }
         item {
-            Box(modifier = Modifier.staggeredEntrance(1, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSGroup {
                     // 主题模式选择 (横向卡片)
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -833,12 +828,12 @@ fun AppearanceSettingsContent(
         }
 
         item {
-            Box(modifier = Modifier.staggeredEntrance(2, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSSectionTitle("显示与排版")
             }
         }
         item {
-            Box(modifier = Modifier.staggeredEntrance(3, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSGroup {
                     Column(modifier = Modifier.padding(16.dp)) {
                         IOSSlidingSegmentedSetting(
@@ -956,12 +951,12 @@ fun AppearanceSettingsContent(
         
         //  启动画面
         item { 
-            Box(modifier = Modifier.staggeredEntrance(2, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSSectionTitle("启动画面") 
             }
         }
         item {
-            Box(modifier = Modifier.staggeredEntrance(3, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSGroup {
                     val isSplashEnabled by com.android.purebilibili.core.store.SettingsManager.isSplashEnabled(context).collectAsState(initial = false)
                     val splashRandomEnabled by com.android.purebilibili.core.store.SettingsManager.getSplashRandomEnabled(context).collectAsState(initial = false)
@@ -1155,12 +1150,12 @@ fun AppearanceSettingsContent(
         
         //  个性化
         item { 
-            Box(modifier = Modifier.staggeredEntrance(4, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSSectionTitle("个性化") 
             }
         }
         item {
-            Box(modifier = Modifier.staggeredEntrance(5, isVisible, motionTier = effectiveMotionTier)) {
+            Box(modifier = Modifier.entrance()) {
                 IOSGroup {
                     // 图标设置
 	                    IOSClickableItem(
@@ -1230,12 +1225,12 @@ fun AppearanceSettingsContent(
 
             //  首页展示 - 抽屉式选择
             item { 
-                Box(modifier = Modifier.staggeredEntrance(6, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("首页展示") 
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(7, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         val displayMode = state.displayMode
                         var isExpanded by remember { mutableStateOf(false) }
@@ -1634,6 +1629,7 @@ fun AppearanceSettingsContent(
             }
         
 
+    }
     }
 
     if (showMd3ColorPickerDialog) {

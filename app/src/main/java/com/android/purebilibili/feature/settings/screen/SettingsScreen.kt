@@ -72,7 +72,8 @@ import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import kotlinx.coroutines.launch
 
 import com.android.purebilibili.core.ui.components.IOSSectionTitle
-import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import com.android.purebilibili.core.ui.animation.EntranceGroup
+import com.android.purebilibili.core.ui.animation.entrance
 import com.android.purebilibili.feature.dynamic.defaultDynamicTabVisibleIds
 import com.android.purebilibili.feature.dynamic.resolveDynamicVisibleTabIdsAfterToggle
 
@@ -1262,16 +1263,12 @@ private fun MobileSettingsLayout(
     homeRefreshCount: Int,
     onHomeRefreshCountChange: (Int) -> Unit
 ) {
-    var isVisible by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val windowSizeClass = LocalWindowSizeClass.current
     val deviceUiProfile = remember(windowSizeClass.widthSizeClass) {
         resolveDeviceUiProfile(
             widthSizeClass = windowSizeClass.widthSizeClass
         )
-    }
-    val effectiveMotionTier = remember(deviceUiProfile.motionTier) {
-        resolveSettingsEntranceMotionTier(deviceUiProfile.motionTier)
     }
     val sectionOrder = remember { resolveSettingsRootCategoryOrder() }
     val focusRequest by SettingsSearchFocusController.request.collectAsState()
@@ -1356,7 +1353,6 @@ private fun MobileSettingsLayout(
         homeRefreshCount = homeRefreshCount
     )
 
-    LaunchedEffect(Unit) { isVisible = true }
     LaunchedEffect(focusRequest, searchQuery) {
         val request = focusRequest ?: return@LaunchedEffect
         if (!isSceneSettingsSearchTarget(request.target) || searchQuery.isNotBlank()) {
@@ -1392,6 +1388,7 @@ private fun MobileSettingsLayout(
         containerColor = AppSurfaceTokens.groupedListContainer(),
         contentWindowInsets = WindowInsets(0.dp)
     ) { padding ->
+        EntranceGroup {
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -1420,7 +1417,7 @@ private fun MobileSettingsLayout(
                         Box(
                             modifier = Modifier
                                 .padding(top = if (index == 0) 8.dp else 16.dp)
-                                .staggeredEntrance(index, isVisible, motionTier = effectiveMotionTier)
+                                .entrance()
                         ) {
                             SettingsRootCategoryContent(
                                 category = section,
@@ -1433,6 +1430,7 @@ private fun MobileSettingsLayout(
 
                 item { Spacer(modifier = Modifier.height(16.dp)) }
             }
+        }
         }
     }
 }

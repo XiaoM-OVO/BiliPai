@@ -70,7 +70,8 @@ import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
 import com.android.purebilibili.core.util.LocalWindowSizeClass
 import kotlinx.coroutines.launch
 import com.android.purebilibili.core.ui.components.*
-import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import com.android.purebilibili.core.ui.animation.EntranceGroup
+import com.android.purebilibili.core.ui.animation.entrance
 
 /**
  *  底栏项目配置
@@ -228,14 +229,10 @@ fun BottomBarSettingsContent(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val focusRequest by SettingsSearchFocusController.request.collectAsState()
-    var isVisible by remember { mutableStateOf(false) }
     val deviceUiProfile = remember(windowSizeClass.widthSizeClass) {
         resolveDeviceUiProfile(
             widthSizeClass = windowSizeClass.widthSizeClass
         )
-    }
-    val effectiveMotionTier = remember(deviceUiProfile.motionTier) {
-        resolveSettingsEntranceMotionTier(deviceUiProfile.motionTier)
     }
     LaunchedEffect(focusRequest?.token) {
         val request = focusRequest ?: return@LaunchedEffect
@@ -247,9 +244,6 @@ fun BottomBarSettingsContent(
     val allBottomBarTabs = remember(uiPreset) { resolveAllBottomBarTabs(uiPreset) }
     val allTopTabs = remember(uiPreset) { resolveAllTopTabs(uiPreset) }
 
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
     
     // 读取当前配置
     val order by SettingsManager.getBottomBarOrder(context).collectAsState(initial = listOf("HOME", "DYNAMIC", "HISTORY", "PROFILE"))
@@ -347,6 +341,7 @@ fun BottomBarSettingsContent(
         }
     }
 
+    EntranceGroup {
     LazyColumn(
         state = listState,
         modifier = modifier
@@ -356,7 +351,7 @@ fun BottomBarSettingsContent(
     ) {
             // 说明文字
             item {
-                Box(modifier = Modifier.staggeredEntrance(0, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     Text(
                         text = "集中管理底部导航、首页顶部标签和平板侧边栏。底栏项目最少 2 个，最多 5 个。",
                         style = MaterialTheme.typography.bodySmall,
@@ -367,13 +362,13 @@ fun BottomBarSettingsContent(
             
             // 底部导航
             item {
-                Box(modifier = Modifier.staggeredEntrance(1, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("底部导航")
                 }
             }
 
             item {
-                Box(modifier = Modifier.staggeredEntrance(2, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         val scope = rememberCoroutineScope()
                         val visibilityMode by SettingsManager.getBottomBarVisibilityMode(context).collectAsState(initial = SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE)
@@ -555,13 +550,13 @@ fun BottomBarSettingsContent(
 
             // 顶部标签
             item {
-                Box(modifier = Modifier.staggeredEntrance(3, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("顶部标签")
                 }
             }
 
             item {
-                Box(modifier = Modifier.staggeredEntrance(4, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -940,13 +935,13 @@ fun BottomBarSettingsContent(
 
             // 平板导航
             item {
-                Box(modifier = Modifier.staggeredEntrance(5, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("平板导航")
                 }
             }
 
             item {
-                Box(modifier = Modifier.staggeredEntrance(6, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         IOSSwitchItem(
                             icon = CupertinoIcons.Outlined.SidebarLeft,
@@ -966,13 +961,13 @@ fun BottomBarSettingsContent(
 
             // 当前底栏预览
             item {
-                Box(modifier = Modifier.staggeredEntrance(7, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("当前底栏")
                 }
             }
             
             item {
-                Box(modifier = Modifier.staggeredEntrance(8, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     BottomBarPreview(
                         tabs = localOrder.filter { it in localVisibleTabs }
                             .mapNotNull { id -> allBottomBarTabs.find { it.id == id } },
@@ -984,7 +979,7 @@ fun BottomBarSettingsContent(
             
             // 可用项目列表
             item {
-                Box(modifier = Modifier.staggeredEntrance(9, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     Column {
                         Spacer(modifier = Modifier.height(8.dp))
                         IOSSectionTitle("可用项目")
@@ -993,7 +988,7 @@ fun BottomBarSettingsContent(
             }
             
             item {
-                Box(modifier = Modifier.staggeredEntrance(10, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         allBottomBarTabs.forEachIndexed { index, tab ->
                             if (index > 0) {
@@ -1033,7 +1028,7 @@ fun BottomBarSettingsContent(
             
             // 顺序调整说明
             item {
-                Box(modifier = Modifier.staggeredEntrance(11, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     Column {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -1047,7 +1042,7 @@ fun BottomBarSettingsContent(
             
             // 重置按钮
             item {
-                Box(modifier = Modifier.staggeredEntrance(12, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     Column {
                         Spacer(modifier = Modifier.height(16.dp))
                         io.github.alexzhirkevich.cupertino.CupertinoButton(
@@ -1076,6 +1071,7 @@ fun BottomBarSettingsContent(
                 }
             }
         }
+    }
     }
 
 

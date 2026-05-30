@@ -57,7 +57,8 @@ import com.android.purebilibili.feature.video.subtitle.SubtitleAutoPreference
 import com.android.purebilibili.feature.video.subtitle.isSubtitleFeatureEnabledForUser
 import kotlinx.coroutines.launch
 import com.android.purebilibili.core.ui.components.*
-import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import com.android.purebilibili.core.ui.animation.EntranceGroup
+import com.android.purebilibili.core.ui.animation.entrance
 
 /**
  *  播放设置二级页面
@@ -114,14 +115,10 @@ fun PlaybackSettingsContent(
     val windowSizeClass = LocalWindowSizeClass.current
     // val state by viewModel.state.collectAsState() // Moved to parameter
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    var isVisible by remember { mutableStateOf(false) }
     val deviceUiProfile = remember(windowSizeClass.widthSizeClass) {
         resolveDeviceUiProfile(
             widthSizeClass = windowSizeClass.widthSizeClass
         )
-    }
-    val effectiveMotionTier = remember(deviceUiProfile.motionTier) {
-        resolveSettingsEntranceMotionTier(deviceUiProfile.motionTier)
     }
     LaunchedEffect(focusRequest?.token) {
         val request = focusRequest ?: return@LaunchedEffect
@@ -131,9 +128,6 @@ fun PlaybackSettingsContent(
         SettingsSearchFocusController.clear(request.token)
     }
 
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
 
     var isStatsEnabled by remember { mutableStateOf(prefs.getBoolean("show_stats", false)) }
     var showPipPermissionDialog by remember { mutableStateOf(false) }
@@ -238,6 +232,7 @@ fun PlaybackSettingsContent(
         )
     }
 
+    EntranceGroup {
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
@@ -247,12 +242,12 @@ fun PlaybackSettingsContent(
             //  解码设置
             //  解码设置
             item {
-                Box(modifier = Modifier.staggeredEntrance(0, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("解码")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(1, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     val scope = rememberCoroutineScope()
                     val codecOptions = listOf(
                         PlaybackSegmentOption("avc1", "AVC"),
@@ -309,12 +304,12 @@ fun PlaybackSettingsContent(
             }
 
             item {
-                Box(modifier = Modifier.staggeredEntrance(2, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("播放速度")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(3, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     val scope = rememberCoroutineScope()
                     IOSGroup {
 	                        IOSSwitchItem(
@@ -360,12 +355,12 @@ fun PlaybackSettingsContent(
 
             //  小窗播放
             item {
-                Box(modifier = Modifier.staggeredEntrance(4, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("小窗播放")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(5, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     val scope = rememberCoroutineScope()
                     val pipNoDanmakuEnabled by com.android.purebilibili.core.store.SettingsManager
                         .getPipNoDanmakuEnabled(context)
@@ -557,12 +552,12 @@ fun PlaybackSettingsContent(
 
             //  手势设置
             item {
-                Box(modifier = Modifier.staggeredEntrance(6, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("手势控制")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(7, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -624,12 +619,12 @@ fun PlaybackSettingsContent(
 
             //  调试选项
             item {
-                Box(modifier = Modifier.staggeredEntrance(8, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("调试")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(9, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
 	                        IOSSwitchItem(
 	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.PLAYER_STATS),
@@ -692,12 +687,12 @@ fun PlaybackSettingsContent(
 
             //  交互设置
             item {
-                Box(modifier = Modifier.staggeredEntrance(10, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("互动与评论")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(11, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     PlaybackInteractionSettingsSection(
                         context = context,
                         state = state,
@@ -706,24 +701,24 @@ fun PlaybackSettingsContent(
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(12, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("全屏与手势")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(13, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     PlaybackFullscreenGestureSettingsSection(context = context)
                 }
             }
 
             //  网络与画质
             item {
-                Box(modifier = Modifier.staggeredEntrance(14, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("网络与画质")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(15, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     val scope = rememberCoroutineScope()
                     val wifiQuality by com.android.purebilibili.core.store.SettingsManager
                         .getWifiQuality(context).collectAsState(initial = 80)
@@ -868,12 +863,12 @@ fun PlaybackSettingsContent(
 
             // 📉 省流量模式
             item {
-                Box(modifier = Modifier.staggeredEntrance(16, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("省流量")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(17, isVisible, motionTier = effectiveMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     val scope = rememberCoroutineScope()
                     val dataSaverMode by com.android.purebilibili.core.store.SettingsManager
                         .getDataSaverMode(context).collectAsState(
@@ -950,6 +945,7 @@ fun PlaybackSettingsContent(
             }
 
             item { Spacer(modifier = Modifier.height(32.dp)) }
+}
 }
 }
 

@@ -42,7 +42,9 @@ import com.android.purebilibili.feature.home.components.resolveLiquidGlassTuning
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import com.android.purebilibili.core.ui.components.*
-import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import com.android.purebilibili.core.ui.animation.EntranceGroup
+import com.android.purebilibili.core.ui.animation.entrance
+import com.android.purebilibili.core.ui.animation.rememberEffectiveEntranceMotionSpec
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.os.Build
@@ -119,9 +121,6 @@ fun AnimationSettingsContent(
             widthSizeClass = windowSizeClass.widthSizeClass
         )
     }
-    val settingsEntranceMotionTier = remember(deviceUiProfile.motionTier) {
-        resolveSettingsEntranceMotionTier(deviceUiProfile.motionTier)
-    }
     val cardMotionTier = resolveAnimationSettingsCardMotionTier(
         baseTier = deviceUiProfile.motionTier,
         cardAnimationEnabled = state.cardAnimationEnabled
@@ -144,7 +143,11 @@ fun AnimationSettingsContent(
     val bottomBarLiquidGlassEnabled = state.bottomBarLiquidGlassEnabled
     val bottomBarLiquidGlassPreset by SettingsManager.getBottomBarLiquidGlassPreset(context)
         .collectAsState(initial = BottomBarLiquidGlassPreset.BILIPAI_TUNED)
-    var isVisible by remember { mutableStateOf(false) }
+    val uiEntranceAnimationEnabled by SettingsManager.getUiEntranceAnimationEnabled(context)
+        .collectAsState(initial = true)
+    val effectiveEntranceSpec = rememberEffectiveEntranceMotionSpec()
+    // 开关开着、但有效参数被降级为不动画 → 系统减弱动效在生效。
+    val entranceDowngradedBySystem = uiEntranceAnimationEnabled && !effectiveEntranceSpec.animate
     LaunchedEffect(focusRequest?.token) {
         val request = focusRequest ?: return@LaunchedEffect
         if (request.target != SettingsSearchTarget.ANIMATION) return@LaunchedEffect
@@ -152,23 +155,61 @@ fun AnimationSettingsContent(
         listState.animateScrollToItem(index)
         SettingsSearchFocusController.clear(request.token)
     }
-    LaunchedEffect(Unit) { isVisible = true }
 
+    EntranceGroup {
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
         contentPadding = WindowInsets.navigationBars.asPaddingValues()
     ) {
-            
-            //  卡片动画
+
+            //  界面动效（全 App 入场）
+            item {
+                Box(modifier = Modifier.entrance()) {
+                    IOSSectionTitle("界面动效")
+                }
+            }
+            item {
+                Box(modifier = Modifier.entrance()) {
+                    IOSGroup {
+                        IOSSwitchItem(
+                            icon = rememberSettingsSemanticIcon(SettingsIconRole.CARD_ENTRANCE_ANIMATION),
+                            title = "界面入场动画",
+                            subtitle = "进入页面时内容逐条淡入浮现",
+                            checked = uiEntranceAnimationEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    SettingsManager.setUiEntranceAnimationEnabled(context, value)
+                                }
+                            },
+                            iconTint = iOSGreen
+                        )
+                        if (entranceDowngradedBySystem) {
+                            IOSDivider()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = "系统已开启「减弱动效」，入场动画已自动关闭。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             //  卡片动画
             item {
-                Box(modifier = Modifier.staggeredEntrance(0, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("卡片动画")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(1, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
 	                        IOSSwitchItem(
 	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.CARD_ENTRANCE_ANIMATION),
@@ -224,12 +265,12 @@ fun AnimationSettingsContent(
             
             // ✨ 视觉效果
             item {
-                Box(modifier = Modifier.staggeredEntrance(2, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("视觉效果")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(3, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
                         if (isLiquidGlassAvailable) {
 	                            IOSSwitchItem(
@@ -368,12 +409,12 @@ fun AnimationSettingsContent(
             
             // 📐 底栏样式
             item {
-                Box(modifier = Modifier.staggeredEntrance(4, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSSectionTitle("底栏样式")
                 }
             }
             item {
-                Box(modifier = Modifier.staggeredEntrance(5, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     IOSGroup {
 	                        IOSSwitchItem(
 	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.FLOATING_BOTTOM_BAR),
@@ -389,7 +430,7 @@ fun AnimationSettingsContent(
             
             //  提示
             item {
-                Box(modifier = Modifier.staggeredEntrance(6, isVisible, motionTier = settingsEntranceMotionTier)) {
+                Box(modifier = Modifier.entrance()) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -420,4 +461,5 @@ fun AnimationSettingsContent(
             
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
+    }
     }

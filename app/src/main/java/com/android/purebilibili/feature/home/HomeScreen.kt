@@ -116,6 +116,7 @@ import com.android.purebilibili.core.util.CardPositionManager
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
 import com.android.purebilibili.core.ui.motion.pullRefreshReleaseSpring
+import com.android.purebilibili.core.ui.motion.rememberSystemReduceMotion
 import com.android.purebilibili.core.ui.performance.TrackJankStateFlag
 import com.android.purebilibili.core.ui.performance.TrackJankStateValue
 import com.android.purebilibili.core.util.resolveScrollToTopPlan
@@ -630,7 +631,10 @@ fun HomeScreen(
     }
     val isHeaderBlurEnabled = homePerformanceConfig.headerBlurEnabled
     val isBottomBarBlurEnabled = homePerformanceConfig.bottomBarBlurEnabled
-    val cardAnimationEnabled = homePerformanceConfig.cardAnimationEnabled
+    // [统一门控] 系统「减弱动效」是所有界面动效的通用开关:开启时关闭卡片进场/消散等所有卡片动效,
+    // 各功能面自身的开关(此处为卡片动画开关)仍各自独立。与设置页入场动画共用同一 reduce-motion 判定。
+    val systemReduceMotion = rememberSystemReduceMotion()
+    val cardAnimationEnabled = homePerformanceConfig.cardAnimationEnabled && !systemReduceMotion
     val cardTransitionEnabled = homePerformanceConfig.cardTransitionEnabled
     val isBottomBarLiquidGlassEnabled = homePerformanceConfig.bottomBarLiquidGlassEnabled
     val isLiquidGlassEnabled = homePerformanceConfig.isAnyLiquidGlassEnabled
