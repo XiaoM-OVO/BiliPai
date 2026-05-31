@@ -367,6 +367,7 @@ data class HomeSettings(
     val bottomBarLabelMode: Int = 0,       // (0=图标+文字, 1=仅图标, 2=仅文字)
     val topTabLabelMode: Int = 2,          // (0=图标+文字, 1=仅图标, 2=仅文字)
     val homeTopRightAction: HomeTopRightAction = HomeTopRightAction.SETTINGS,
+    val homeTopLayoutOrder: HomeTopLayoutOrder = HomeTopLayoutOrder.SEARCH_THEN_TABS,
     val isHeaderBlurEnabled: Boolean = true,
     val headerBlurMode: HomeHeaderBlurMode = HomeHeaderBlurMode.FOLLOW_PRESET,
     val isBottomBarBlurEnabled: Boolean = true,
@@ -383,7 +384,7 @@ data class HomeSettings(
     val liquidGlassMode: LiquidGlassMode = LiquidGlassMode.BALANCED,
     val liquidGlassStrength: Float = 0.52f,
     val liquidGlassProgress: Float = 0.5f,
-    val isHeaderCollapseEnabled: Boolean = false, // [Retired] 首页顶部栏自动收缩已下线，固定关闭
+    val isHeaderCollapseEnabled: Boolean = true,
     val gridColumnCount: Int = 0, // [New] 网格列数 (0=自动, 1-6=固定)
     val homeFeedCardWidthPreset: HomeFeedCardWidthPreset = HomeFeedCardWidthPreset.AUTO,
     val cardAnimationEnabled: Boolean = false,    //  卡片进场动画（默认关闭）
@@ -447,6 +448,16 @@ enum class HomeTopRightAction(val value: Int, val label: String) {
     companion object {
         fun fromValue(value: Int): HomeTopRightAction =
             entries.find { it.value == value } ?: SETTINGS
+    }
+}
+
+enum class HomeTopLayoutOrder(val value: Int, val label: String) {
+    SEARCH_THEN_TABS(0, "搜索在上"),
+    TABS_THEN_SEARCH(1, "标签在上");
+
+    companion object {
+        fun fromValue(value: Int): HomeTopLayoutOrder =
+            entries.find { it.value == value } ?: SEARCH_THEN_TABS
     }
 }
 
@@ -874,8 +885,8 @@ object SettingsManager {
     //  [新增] 模糊效果开关
     private val KEY_HEADER_BLUR_ENABLED = booleanPreferencesKey("header_blur_enabled")
     private val KEY_HOME_HEADER_BLUR_MODE = intPreferencesKey("home_header_blur_mode")
-    //  [已下线] 首页顶部栏自动收缩，仅保留旧键兼容历史数据
     private val KEY_HEADER_COLLAPSE_ENABLED = booleanPreferencesKey("header_collapse_enabled")
+    private val KEY_HOME_TOP_LAYOUT_ORDER = intPreferencesKey("home_top_layout_order")
     private val KEY_BOTTOM_BAR_BLUR_ENABLED = booleanPreferencesKey("bottom_bar_blur_enabled")
     private val KEY_TOP_BAR_LIQUID_GLASS_ENABLED = booleanPreferencesKey("top_bar_liquid_glass_enabled")
     private val KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED = booleanPreferencesKey("bottom_bar_liquid_glass_enabled")
@@ -984,9 +995,12 @@ object SettingsManager {
             homeTopRightAction = HomeTopRightAction.fromValue(
                 preferences[KEY_HOME_TOP_RIGHT_ACTION] ?: HomeTopRightAction.SETTINGS.value
             ),
+            homeTopLayoutOrder = HomeTopLayoutOrder.fromValue(
+                preferences[KEY_HOME_TOP_LAYOUT_ORDER] ?: HomeTopLayoutOrder.SEARCH_THEN_TABS.value
+            ),
             isHeaderBlurEnabled = headerBlurMode != HomeHeaderBlurMode.ALWAYS_OFF,
             headerBlurMode = headerBlurMode,
-            isHeaderCollapseEnabled = false,
+            isHeaderCollapseEnabled = preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true,
             isBottomBarBlurEnabled = preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] ?: true,
             isTopBarLiquidGlassEnabled = false,
             isBottomBarLiquidGlassEnabled = preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] ?: legacyLiquidGlassEnabled,
@@ -2122,6 +2136,19 @@ object SettingsManager {
         }
     }
 
+    fun getHomeTopLayoutOrder(context: Context): Flow<HomeTopLayoutOrder> = context.settingsDataStore.data
+        .map { preferences ->
+            HomeTopLayoutOrder.fromValue(
+                preferences[KEY_HOME_TOP_LAYOUT_ORDER] ?: HomeTopLayoutOrder.SEARCH_THEN_TABS.value
+            )
+        }
+
+    suspend fun setHomeTopLayoutOrder(context: Context, order: HomeTopLayoutOrder) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_HOME_TOP_LAYOUT_ORDER] = order.value
+        }
+    }
+
     //  [新增] --- 顶部标签顺序配置 ---
     fun getTopTabOrder(context: Context): Flow<List<String>> = context.settingsDataStore.data.map { prefs ->
         val orderString = prefs[KEY_TOP_TAB_ORDER] ?: DEFAULT_TOP_TAB_ORDER
@@ -2227,12 +2254,14 @@ object SettingsManager {
         }
     }
     
-    //  [已下线] --- 首页顶部栏自动收缩 ---
+    //  首页顶部栏自动收缩：下滑收起搜索行，回到列表顶部时展开。
     fun getHeaderCollapseEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { false }
+        .map { preferences -> preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true }
 
     suspend fun setHeaderCollapseEnabled(context: Context, value: Boolean) {
-        // 首页顶部标签自动收缩已下线，保留接口兼容旧调用。
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_HEADER_COLLAPSE_ENABLED] = value
+        }
     }
     
     //  [新增] --- 底栏模糊效果 ---
@@ -5358,6 +5387,8 @@ object SettingsManager {
             StringShareablePreferenceDefinition(KEY_BOTTOM_BAR_VISIBLE_TABS, SettingsShareSection.NAVIGATION),
             StringShareablePreferenceDefinition(KEY_BOTTOM_BAR_ITEM_COLORS, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_VISIBILITY_MODE, SettingsShareSection.NAVIGATION),
+            IntShareablePreferenceDefinition(KEY_HOME_TOP_LAYOUT_ORDER, SettingsShareSection.NAVIGATION),
+            BooleanShareablePreferenceDefinition(KEY_HEADER_COLLAPSE_ENABLED, SettingsShareSection.NAVIGATION),
             BooleanShareablePreferenceDefinition(KEY_TABLET_NAVIGATION_MODE, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_DYNAMIC_PAGE_LAYOUT_DIRECTION, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_FEED_API_TYPE, SettingsShareSection.NAVIGATION),

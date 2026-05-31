@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.purebilibili.R
 import com.android.purebilibili.core.store.HomeHeaderBlurMode
+import com.android.purebilibili.core.store.HomeTopLayoutOrder
 import com.android.purebilibili.core.store.HomeTopRightAction
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.theme.BottomBarColors  //  统一底栏颜色配置
@@ -258,6 +259,10 @@ fun BottomBarSettingsContent(
         .collectAsState(initial = SettingsManager.TopTabLabelMode.TEXT_ONLY)
     val headerBlurMode by SettingsManager.getHomeHeaderBlurMode(context)
         .collectAsState(initial = HomeHeaderBlurMode.FOLLOW_PRESET)
+    val homeTopLayoutOrder by SettingsManager.getHomeTopLayoutOrder(context)
+        .collectAsState(initial = HomeTopLayoutOrder.SEARCH_THEN_TABS)
+    val headerCollapseEnabled by SettingsManager.getHeaderCollapseEnabled(context)
+        .collectAsState(initial = true)
     val homeTopRightAction by SettingsManager.getHomeTopRightAction(context)
         .collectAsState(initial = HomeTopRightAction.SETTINGS)
     val tabletUseSidebar by SettingsManager.getTabletUseSidebar(context).collectAsState(initial = false)
@@ -776,6 +781,80 @@ fun BottomBarSettingsContent(
                                     }
                                 }
                             }
+
+                            HorizontalDivider()
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    CupertinoIcons.Default.ListBullet,
+                                    contentDescription = null,
+                                    tint = com.android.purebilibili.core.theme.iOSPurple,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(
+                                        text = "首页顶部布局",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = homeTopLayoutOrder.label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                listOf(
+                                    HomeTopLayoutOrder.SEARCH_THEN_TABS to "搜索在上",
+                                    HomeTopLayoutOrder.TABS_THEN_SEARCH to "标签在上"
+                                ).forEach { (order, label) ->
+                                    val isSelected = homeTopLayoutOrder == order
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                scope.launch {
+                                                    SettingsManager.setHomeTopLayoutOrder(context, order)
+                                                }
+                                            }
+                                            .background(
+                                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                else Color.Transparent
+                                            )
+                                            .padding(horizontal = 18.dp, vertical = 9.dp)
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider()
+
+                            IOSSwitchItem(
+                                icon = CupertinoIcons.Outlined.ArrowUpArrowDown,
+                                title = "下滑折叠顶部搜索",
+                                subtitle = "列表下滑时收起搜索行，回到顶部后自动展开",
+                                checked = headerCollapseEnabled,
+                                onCheckedChange = { checked ->
+                                    scope.launch {
+                                        SettingsManager.setHeaderCollapseEnabled(context, checked)
+                                    }
+                                },
+                                iconTint = com.android.purebilibili.core.theme.iOSBlue
+                            )
 
                             HorizontalDivider()
 

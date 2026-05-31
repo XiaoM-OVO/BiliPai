@@ -24,9 +24,10 @@ class HomeSettingsMappingPolicyTest {
         assertEquals(0, result.bottomBarLabelMode)
         assertEquals(SettingsManager.TopTabLabelMode.TEXT_ONLY, result.topTabLabelMode)
         assertEquals(HomeTopRightAction.SETTINGS, result.homeTopRightAction)
+        assertEquals(HomeTopLayoutOrder.SEARCH_THEN_TABS, result.homeTopLayoutOrder)
         assertTrue(result.isHeaderBlurEnabled)
         assertEquals(HomeHeaderBlurMode.FOLLOW_PRESET, result.headerBlurMode)
-        assertFalse(result.isHeaderCollapseEnabled)
+        assertTrue(result.isHeaderCollapseEnabled)
         assertTrue(result.isBottomBarBlurEnabled)
         assertFalse(result.isTopBarLiquidGlassEnabled)
         assertTrue(result.isBottomBarLiquidGlassEnabled)
@@ -63,6 +64,7 @@ class HomeSettingsMappingPolicyTest {
             intPreferencesKey("bottom_bar_label_mode") to 2,
             intPreferencesKey("top_tab_label_mode") to 1,
             intPreferencesKey("home_top_right_action") to HomeTopRightAction.INBOX.value,
+            intPreferencesKey("home_top_layout_order") to HomeTopLayoutOrder.TABS_THEN_SEARCH.value,
             booleanPreferencesKey("header_blur_enabled") to false,
             booleanPreferencesKey("header_collapse_enabled") to false,
             booleanPreferencesKey("bottom_bar_blur_enabled") to false,
@@ -97,6 +99,7 @@ class HomeSettingsMappingPolicyTest {
         assertEquals(2, result.bottomBarLabelMode)
         assertEquals(1, result.topTabLabelMode)
         assertEquals(HomeTopRightAction.INBOX, result.homeTopRightAction)
+        assertEquals(HomeTopLayoutOrder.TABS_THEN_SEARCH, result.homeTopLayoutOrder)
         assertFalse(result.isHeaderBlurEnabled)
         assertEquals(HomeHeaderBlurMode.ALWAYS_OFF, result.headerBlurMode)
         assertFalse(result.isHeaderCollapseEnabled)
@@ -150,6 +153,17 @@ class HomeSettingsMappingPolicyTest {
         val result = mapHomeSettingsFromPreferences(prefs)
 
         assertEquals(HomeTopRightAction.SETTINGS, result.homeTopRightAction)
+    }
+
+    @Test
+    fun invalidHomeTopLayoutOrderFallsBackToSearchThenTabs() {
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("home_top_layout_order") to 99
+        )
+
+        val result = mapHomeSettingsFromPreferences(prefs)
+
+        assertEquals(HomeTopLayoutOrder.SEARCH_THEN_TABS, result.homeTopLayoutOrder)
     }
 
     @Test

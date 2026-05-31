@@ -71,6 +71,7 @@ import com.android.purebilibili.core.ui.rememberAppInboxIcon
 import com.android.purebilibili.core.ui.rememberAppSettingsIcon
 import com.android.purebilibili.core.store.HomeHeaderBlurMode
 import com.android.purebilibili.core.store.HomeSettings
+import com.android.purebilibili.core.store.HomeTopLayoutOrder
 import com.android.purebilibili.core.store.HomeTopRightAction
 import com.android.purebilibili.core.store.resolveEffectiveLiquidGlassEnabled
 import com.android.purebilibili.feature.home.resolveHomeTopCategories
@@ -2043,6 +2044,7 @@ fun iOSHomeHeader(
     )
     val tabBorderAlpha = if (isTabFloating) tabChromeStyle.borderAlpha else 0f
     val topAtmosphereImagePath = uiSkinDecoration?.topAtmosphereImagePath
+    val topLayoutOrder = homeSettings?.homeTopLayoutOrder ?: HomeTopLayoutOrder.SEARCH_THEN_TABS
     val topTabsContent: @Composable () -> Unit = {
         HomeTopTabChrome(
             currentTabHeight = currentTabHeight,
@@ -2195,7 +2197,7 @@ fun iOSHomeHeader(
                     }
             )
 
-                    // 2. Search Bar + Avatar + right action
+            // 2. Search Bar + Avatar + right action
             // 高度和透明度由外部直接控制，实现物理跟手
             Box(
                 modifier = Modifier
@@ -2302,6 +2304,23 @@ fun iOSHomeHeader(
                             }
                         )
                 ) {
+                    if (topLayoutOrder == HomeTopLayoutOrder.TABS_THEN_SEARCH) {
+                        topTabsContent()
+                        if (drawTopSearchDivider) {
+                            Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = headerChromeColors.borderColor.copy(
+                                    alpha = resolveHomeTopUnifiedPanelDividerAlpha(topChromeRenderMode) *
+                                        searchRevealFraction
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(currentUnifiedDividerBottomSpacing))
+                        } else {
+                            Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2708,21 +2727,23 @@ fun iOSHomeHeader(
                         }
                     }
 
-                    if (drawTopSearchDivider) {
-                        Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = headerChromeColors.borderColor.copy(
-                                alpha = resolveHomeTopUnifiedPanelDividerAlpha(topChromeRenderMode) *
-                                    searchRevealFraction
+                    if (topLayoutOrder == HomeTopLayoutOrder.SEARCH_THEN_TABS) {
+                        if (drawTopSearchDivider) {
+                            Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = headerChromeColors.borderColor.copy(
+                                    alpha = resolveHomeTopUnifiedPanelDividerAlpha(topChromeRenderMode) *
+                                        searchRevealFraction
+                                )
                             )
-                        )
-                        Spacer(modifier = Modifier.height(currentUnifiedDividerBottomSpacing))
-                    } else {
-                        Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
-                    }
+                            Spacer(modifier = Modifier.height(currentUnifiedDividerBottomSpacing))
+                        } else {
+                            Spacer(modifier = Modifier.height(currentSearchToTabsSpacing))
+                        }
 
-                    topTabsContent()
+                        topTabsContent()
+                    }
                 }
             }
         }

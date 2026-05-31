@@ -1127,8 +1127,9 @@ fun HomeScreen(
     
     // Pixels
     val searchCollapseDistancePx = with(density) { searchCollapseDistanceDp.toPx() }
+    val isHeaderCollapseEnabled = homeSettings.isHeaderCollapseEnabled
 
-    LaunchedEffect(pagerState, topTabEntries, searchCollapseDistancePx) {
+    LaunchedEffect(pagerState, topTabEntries, searchCollapseDistancePx, isHeaderCollapseEnabled) {
         snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
             .distinctUntilChanged()
             .collect { (page, scrolling) ->
@@ -1136,19 +1137,22 @@ fun HomeScreen(
                 val settledEntry = resolveHomeTopTabEntryOrNull(topTabEntries, page)
                 val settledCategory = (settledEntry as? HomeTopTabEntry.Category)?.category ?: return@collect
                 val settledGridState = gridStates[settledCategory] ?: return@collect
-                val settledHeaderOffsetPx = resolveHomeHeaderOffsetForSettledPage(
-                    firstVisibleItemIndex = settledGridState.firstVisibleItemIndex,
-                    firstVisibleItemScrollOffset = settledGridState.firstVisibleItemScrollOffset,
-                    maxHeaderCollapsePx = searchCollapseDistancePx
-                )
+                val settledHeaderOffsetPx = if (isHeaderCollapseEnabled) {
+                    resolveHomeHeaderOffsetForSettledPage(
+                        firstVisibleItemIndex = settledGridState.firstVisibleItemIndex,
+                        firstVisibleItemScrollOffset = settledGridState.firstVisibleItemScrollOffset,
+                        maxHeaderCollapsePx = searchCollapseDistancePx
+                    )
+                } else {
+                    0f
+                }
                 if (kotlin.math.abs(headerOffsetHeightPx - settledHeaderOffsetPx) > 0.5f) {
                     animateHeaderOffsetTo(settledHeaderOffsetPx)
                 }
             }
     }
     
-    // 顶部搜索行默认随内容上滑收起；标签 dock 保持可见，便于继续切换分区。
-    val isHeaderCollapseEnabled = shouldAutoCollapseHomeSearchRow()
+    // 顶部搜索行可按设置随内容上滑收起；标签 dock 保持可见，便于继续切换分区。
     val areTopTabsAutoCollapsed by remember(headerOffsetHeightPx, isHeaderCollapseEnabled) {
         derivedStateOf {
             resolveHomeTopTabsAutoCollapsed(
