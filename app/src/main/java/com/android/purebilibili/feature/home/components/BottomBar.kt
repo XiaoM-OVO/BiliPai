@@ -3780,8 +3780,7 @@ internal fun BoxScope.KernelSuBottomBarIndicatorLayer(
     bottomBarMotionSpec: com.android.purebilibili.core.ui.motion.BottomBarMotionSpec,
     isDarkTheme: Boolean,
     swapMotionAxes: Boolean = false,
-    indicatorAlignment: Alignment = Alignment.CenterStart,
-    centerLayerOnIndicatorY: Boolean = false
+    indicatorAlignment: Alignment = Alignment.CenterStart
 ) {
     if (!visible) return
     val rawIndicatorLayerTransform = if (glassEnabled) {
@@ -3803,26 +3802,17 @@ internal fun BoxScope.KernelSuBottomBarIndicatorLayer(
     } else {
         rawIndicatorLayerTransform
     }
-    val indicatorLayerWidth = indicatorWidth * indicatorLayerTransform.scaleX
-    val indicatorLayerHeight = indicatorHeight * indicatorLayerTransform.scaleY
-    val indicatorLayerVerticalCenterOffset = if (centerLayerOnIndicatorY) {
-        (indicatorLayerHeight - indicatorHeight) / 2f
-    } else {
-        0.dp
-    }
     Box(
         modifier = Modifier
             .alpha(dockContentAlpha)
             .graphicsLayer {
-                translationX = indicatorTranslationXPx + indicatorPanelOffsetPx -
-                    ((indicatorLayerWidth - indicatorWidth) / 2f).toPx()
-                translationY = indicatorTranslationYPx + indicatorPanelOffsetYPx -
-                    indicatorLayerVerticalCenterOffset.toPx()
-                scaleX = indicatorSettleReboundTransform.scaleX
-                scaleY = indicatorSettleReboundTransform.scaleY
+                translationX = indicatorTranslationXPx + indicatorPanelOffsetPx
+                translationY = indicatorTranslationYPx + indicatorPanelOffsetYPx
+                scaleX = indicatorSettleReboundTransform.scaleX * indicatorLayerTransform.scaleX
+                scaleY = indicatorSettleReboundTransform.scaleY * indicatorLayerTransform.scaleY
             }
-            .width(indicatorLayerWidth)
-            .height(indicatorLayerHeight)
+            .width(indicatorWidth)
+            .height(indicatorHeight)
             .align(indicatorAlignment)
             .run {
                 val indicatorBackdrop = if (shouldUseBottomBarCombinedIndicatorBackdrop(liquidGlassPreset)) {
