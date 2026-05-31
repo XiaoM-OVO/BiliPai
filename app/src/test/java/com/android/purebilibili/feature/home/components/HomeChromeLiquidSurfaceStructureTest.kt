@@ -58,18 +58,40 @@ class HomeChromeLiquidSurfaceStructureTest {
             topHeaderMatchedSurfaceCalls > 0
         )
         assertTrue(
-            "all matched top header controls should disable the full-shell lens that creates a center refraction seam",
-            topHeaderDisabledShellLensCalls >= topHeaderMatchedSurfaceCalls
+            "search and edge controls should still disable the full-shell lens while the top tab dock may use the bottom-bar shell lens",
+            topHeaderDisabledShellLensCalls >= topHeaderMatchedSurfaceCalls - 1
         )
         assertTrue(
             "top tab row should only treat chrome as external when the outer surface is actually drawn",
-            topHeaderSource.contains("hasOuterChromeSurface = !useUnifiedTopPanel && drawTopTabOuterChromeSurface")
+            topHeaderSource.contains("hasOuterChromeSurface = drawTopTabDockChrome")
         )
         assertTrue(
-            "home header should suppress the nested top tab chrome when the unified top panel already draws it",
-            topHeaderSource.contains("drawChromeSurface = !useUnifiedTopPanel &&") &&
-                topHeaderSource.contains("drawTopTabOuterChromeSurface") &&
-                topTabChrome.readText().contains("drawChromeSurface: Boolean = true")
+            "home header should draw a bottom-bar matched dock around top tabs inside the unified top panel",
+            topHeaderSource.contains("val topTabDockChromeRenderMode = unifiedLocalTabChromeRenderMode") &&
+                topHeaderSource.contains("val useTopTabBottomBarMatchedDock =") &&
+                topHeaderSource.contains("effectiveTabMaterialMode == TopTabMaterialMode.LIQUID_GLASS") &&
+                topHeaderSource.contains("topTabDockChromeRenderMode == HomeTopChromeRenderMode.LIQUID_GLASS_BACKDROP") &&
+                topHeaderSource.contains("val drawTopTabDockChrome = drawTopTabOuterChromeSurface || useTopTabBottomBarMatchedDock") &&
+                topHeaderSource.contains("drawChromeSurface = drawTopTabDockChrome") &&
+                topHeaderSource.contains("useBottomBarMatchedSurface = useTopTabBottomBarMatchedDock") &&
+                topHeaderSource.contains("tabChromeRenderMode = if (useTopTabBottomBarMatchedDock)") &&
+                topHeaderSource.contains("val bottomBarLiquidGlassPreset = homeSettings?.bottomBarLiquidGlassPreset") &&
+                topHeaderSource.contains("liquidGlassPreset = bottomBarLiquidGlassPreset") &&
+                topHeaderSource.contains("topTabDockChromeRenderMode") &&
+                topHeaderSource.contains("tabShape = if (useUnifiedTopPanel)") &&
+                topHeaderSource.contains("resolveSharedBottomBarCapsuleShape()") &&
+                topTabChrome.readText().contains("useBottomBarMatchedSurface: Boolean = false") &&
+                topTabChrome.readText().contains("liquidGlassPreset: BottomBarLiquidGlassPreset") &&
+                topTabChrome.readText().contains(".homeTopBottomBarMatchedSurface(")
+        )
+        assertTrue(
+            "home top avatar, search content and unread badge should live in extracted top-control components",
+            componentsDir.resolve("HomeTopControls.kt").readText().contains("HomeTopAvatarContent(") &&
+                componentsDir.resolve("HomeTopControls.kt").readText().contains("HomeTopSearchPillContent(") &&
+                componentsDir.resolve("HomeTopControls.kt").readText().contains("HomeTopUnreadBadge(") &&
+                topHeaderSource.contains("HomeTopAvatarContent(") &&
+                topHeaderSource.contains("HomeTopSearchPillContent(") &&
+                topHeaderSource.contains("HomeTopUnreadBadge(")
         )
         assertTrue(
             "top tabs should render after the search layer so expanded state matches the reference screenshot",
@@ -92,6 +114,10 @@ class HomeChromeLiquidSurfaceStructureTest {
         assertFalse(
             "top tab chrome should not clip enlarged child indicators to the tab shell",
             topTabChrome.readText().contains(".clip(tabShape)")
+        )
+        assertTrue(
+            "top tab chrome should center the fixed-height tab row inside the taller shell",
+            topTabChrome.readText().contains("contentAlignment = Alignment.Center")
         )
         assertFalse(
             "top tab dock should not switch sampling off during feed scroll",
@@ -116,10 +142,27 @@ class HomeChromeLiquidSurfaceStructureTest {
         )
         assertTrue(
             "matched top dock helper should still use the KSU floating dock renderer for header controls",
-            topBarSource.contains(".kernelSuFloatingDockSurface(")
+            topBarSource.contains(".kernelSuFloatingDockSurface(") &&
+                topBarSource.contains("liquidGlassPreset: BottomBarLiquidGlassPreset") &&
+                topBarSource.contains("liquidGlassPreset = liquidGlassPreset")
+        )
+        assertTrue(
+            "top tab indicator should reuse the bottom bar KSU indicator layer when chrome exists",
+            topBarSource.contains("val shouldRenderTopTabLiquidGlassIndicator = shouldUseLiquidGlassIndicator") &&
+                topBarSource.contains("!hasOuterChromeSurface") &&
+                topBarSource.contains("if (shouldRenderTopTabLiquidGlassIndicator)") &&
+                topBarSource.contains("val shouldUseMd3DockBackedCapsule =") &&
+                topBarSource.contains("KernelSuBottomBarIndicatorLayer(") &&
+                topBarSource.contains("val shouldPrimeTopTabLiquidGlassCapture =") &&
+                topBarSource.contains("(isLiquidGlassEnabled || backdrop != null)") &&
+                topBarSource.contains("val topTabContentBackdrop = rememberLayerBackdrop()") &&
+                topBarSource.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)") &&
+                topBarSource.contains("layerBackdrop(topTabContentBackdrop)") &&
+                topBarSource.contains("contentBackdrop = topTabIndicatorContentBackdrop") &&
+                topBarSource.contains("else if (!shouldUseMd3DockBackedCapsule)")
         )
         assertFalse(
-            "top tab row should not keep backdrop capture, refraction, or liquid indicator layers",
+            "top tab row should not keep the old bottom-bar local backdrop capture names",
             topBarSource.contains("backdrop = tabsBackdrop") ||
                 topBarSource.contains(".layerBackdrop(tabsBackdrop)") ||
                 topBarSource.contains("rememberCombinedBackdrop(backdrop, tabsBackdrop)") ||

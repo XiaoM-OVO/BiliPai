@@ -24,8 +24,11 @@ class HomeSettingsMappingPolicyTest {
         assertEquals(0, result.bottomBarLabelMode)
         assertEquals(SettingsManager.TopTabLabelMode.TEXT_ONLY, result.topTabLabelMode)
         assertEquals(HomeTopRightAction.SETTINGS, result.homeTopRightAction)
+        assertEquals(HomeTopLayoutOrder.SEARCH_THEN_TABS, result.homeTopLayoutOrder)
         assertTrue(result.isHeaderBlurEnabled)
         assertEquals(HomeHeaderBlurMode.FOLLOW_PRESET, result.headerBlurMode)
+        assertEquals(HomeHeaderCollapseMode.SEARCH_ONLY, result.homeHeaderCollapseMode)
+        assertTrue(result.isHeaderCollapseEnabled)
         assertTrue(result.isBottomBarBlurEnabled)
         assertFalse(result.isTopBarLiquidGlassEnabled)
         assertTrue(result.isBottomBarLiquidGlassEnabled)
@@ -62,8 +65,10 @@ class HomeSettingsMappingPolicyTest {
             intPreferencesKey("bottom_bar_label_mode") to 2,
             intPreferencesKey("top_tab_label_mode") to 1,
             intPreferencesKey("home_top_right_action") to HomeTopRightAction.INBOX.value,
+            intPreferencesKey("home_top_layout_order") to HomeTopLayoutOrder.TABS_THEN_SEARCH.value,
             booleanPreferencesKey("header_blur_enabled") to false,
             booleanPreferencesKey("header_collapse_enabled") to false,
+            intPreferencesKey("home_header_collapse_mode") to HomeHeaderCollapseMode.TABS_ONLY.value,
             booleanPreferencesKey("bottom_bar_blur_enabled") to false,
             booleanPreferencesKey("top_bar_liquid_glass_enabled") to false,
             booleanPreferencesKey("bottom_bar_liquid_glass_enabled") to false,
@@ -96,9 +101,11 @@ class HomeSettingsMappingPolicyTest {
         assertEquals(2, result.bottomBarLabelMode)
         assertEquals(1, result.topTabLabelMode)
         assertEquals(HomeTopRightAction.INBOX, result.homeTopRightAction)
+        assertEquals(HomeTopLayoutOrder.TABS_THEN_SEARCH, result.homeTopLayoutOrder)
         assertFalse(result.isHeaderBlurEnabled)
         assertEquals(HomeHeaderBlurMode.ALWAYS_OFF, result.headerBlurMode)
-        assertFalse(result.isHeaderCollapseEnabled)
+        assertEquals(HomeHeaderCollapseMode.TABS_ONLY, result.homeHeaderCollapseMode)
+        assertTrue(result.isHeaderCollapseEnabled)
         assertFalse(result.isBottomBarBlurEnabled)
         assertFalse(result.isTopBarLiquidGlassEnabled)
         assertFalse(result.isBottomBarLiquidGlassEnabled)
@@ -149,6 +156,47 @@ class HomeSettingsMappingPolicyTest {
         val result = mapHomeSettingsFromPreferences(prefs)
 
         assertEquals(HomeTopRightAction.SETTINGS, result.homeTopRightAction)
+    }
+
+    @Test
+    fun invalidHomeTopLayoutOrderFallsBackToSearchThenTabs() {
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("home_top_layout_order") to 99
+        )
+
+        val result = mapHomeSettingsFromPreferences(prefs)
+
+        assertEquals(HomeTopLayoutOrder.SEARCH_THEN_TABS, result.homeTopLayoutOrder)
+    }
+
+    @Test
+    fun legacyHeaderCollapseBoolean_mapsToEquivalentCollapseMode() {
+        val disabledPrefs = mutablePreferencesOf(
+            booleanPreferencesKey("header_collapse_enabled") to false
+        )
+        val enabledPrefs = mutablePreferencesOf(
+            booleanPreferencesKey("header_collapse_enabled") to true
+        )
+
+        val disabled = mapHomeSettingsFromPreferences(disabledPrefs)
+        val enabled = mapHomeSettingsFromPreferences(enabledPrefs)
+
+        assertEquals(HomeHeaderCollapseMode.OFF, disabled.homeHeaderCollapseMode)
+        assertFalse(disabled.isHeaderCollapseEnabled)
+        assertEquals(HomeHeaderCollapseMode.SEARCH_ONLY, enabled.homeHeaderCollapseMode)
+        assertTrue(enabled.isHeaderCollapseEnabled)
+    }
+
+    @Test
+    fun invalidHomeHeaderCollapseModeFallsBackToSearchOnly() {
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("home_header_collapse_mode") to 99
+        )
+
+        val result = mapHomeSettingsFromPreferences(prefs)
+
+        assertEquals(HomeHeaderCollapseMode.SEARCH_ONLY, result.homeHeaderCollapseMode)
+        assertTrue(result.isHeaderCollapseEnabled)
     }
 
     @Test

@@ -4089,6 +4089,7 @@ fun VideoDetailScreen(
         val isSendingComment by viewModel.isSendingComment.collectAsState(context = kotlin.coroutines.EmptyCoroutineContext) // 暂时复用 ViewModel 状态?
         val replyingToComment by viewModel.replyingToComment.collectAsState(context = kotlin.coroutines.EmptyCoroutineContext)
         val emotePackages by viewModel.emotePackages.collectAsState(context = kotlin.coroutines.EmptyCoroutineContext) // [新增]
+        val mentionSearchState by viewModel.commentMentionSearchState.collectAsState(context = kotlin.coroutines.EmptyCoroutineContext)
         
         com.android.purebilibili.feature.video.ui.components.CommentInputDialog(
             visible = showCommentInput,
@@ -4099,6 +4100,10 @@ fun VideoDetailScreen(
             canUploadImage = commentState.canUploadImage,
             canInputComment = commentState.canInputComment,
             emotePackages = emotePackages, // [新增]
+            mentionUsers = mentionSearchState.users,
+            isMentionSearching = mentionSearchState.isLoading,
+            mentionSearchError = mentionSearchState.errorMessage,
+            onMentionSearchQueryChange = viewModel::searchCommentMentionUsers,
             currentVideoPositionMsProvider = { playerState.player.currentPosition.coerceAtLeast(0L) },
             onSend = { message, imageUris, syncToDynamic ->
                 viewModel.sendComment(message, imageUris, syncToDynamic)
@@ -4327,8 +4332,8 @@ fun VideoDetailScreen(
                 title = successForDownload.info.title,
                 qualityOptions = sortedQualityOptions,
                 currentQuality = highestQuality,
-                onQualitySelected = { quality ->
-                    viewModel.downloadWithQuality(quality)
+                onQualitySelected = { quality, options ->
+                    viewModel.downloadWithQuality(quality, options)
                     showQualitySelection = false
                 },
                 onDismiss = { showQualitySelection = false }
@@ -4358,9 +4363,10 @@ fun VideoDetailScreen(
                 qualityOptions = sortedQualityOptions,
                 currentQuality = highestQuality,
                 downloadedIds = downloadedCandidateIds,
-                onConfirm = { quality, selectedCandidates ->
+                onConfirm = { quality, options, selectedCandidates ->
                     viewModel.downloadBatchWithQuality(
                         qualityId = quality,
+                        options = options,
                         candidates = selectedCandidates
                     )
                     showBatchDownloadDialog = false

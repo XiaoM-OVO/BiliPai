@@ -48,6 +48,8 @@ class MessageLinkNavigationPolicyTest {
 
         val dynamicAction = assertIs<MessageLinkNavigationAction.DynamicComment>(action)
         assertEquals("1199344045210468386", dynamicAction.dynamicId)
+        assertEquals(265141324256L, dynamicAction.rootReplyId)
+        assertEquals(0L, dynamicAction.targetReplyId)
     }
 
     @Test
@@ -58,5 +60,17 @@ class MessageLinkNavigationPolicyTest {
 
         val dynamicAction = assertIs<MessageLinkNavigationAction.DynamicComment>(action)
         assertEquals("1073543151725051921", dynamicAction.dynamicId)
+        assertEquals(265141324256L, dynamicAction.rootReplyId)
+        assertEquals(0L, dynamicAction.targetReplyId)
+    }
+
+    @Test
+    fun resolveMessageLinkNavigationAction_routesArticleCommentBusinessToArticle() {
+        val action = resolveMessageLinkNavigationAction(
+            "bilibili://comment/detail/12/34646640/265141324256"
+        )
+
+        val articleAction = assertIs<MessageLinkNavigationAction.Article>(action)
+        assertEquals(34646640L, articleAction.articleId)
     }
 }

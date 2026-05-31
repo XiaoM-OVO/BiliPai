@@ -24,7 +24,7 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(true, state.floating)
-        assertEquals(TopTabMaterialMode.BLUR, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
@@ -64,7 +64,7 @@ class TopTabStylePolicyTest {
     }
 
     @Test
-    fun `docked with liquid downgrades to blur when blur enabled`() {
+    fun `docked with liquid uses liquid glass when blur enabled`() {
         val state = resolveTopTabStyle(
             isBottomBarFloating = false,
             isBottomBarBlurEnabled = true,
@@ -72,11 +72,11 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(false, state.floating)
-        assertEquals(TopTabMaterialMode.BLUR, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
-    fun `docked without blur uses plain`() {
+    fun `docked with liquid uses liquid glass without blur`() {
         val state = resolveTopTabStyle(
             isBottomBarFloating = false,
             isBottomBarBlurEnabled = false,
@@ -84,7 +84,7 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(false, state.floating)
-        assertEquals(TopTabMaterialMode.PLAIN, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
@@ -106,17 +106,23 @@ class TopTabStylePolicyTest {
     }
 
     @Test
-    fun `top tab liquid glass is disabled regardless of interaction budget`() {
-        assertFalse(
+    fun `top tab liquid glass follows requested state regardless of interaction budget`() {
+        assertTrue(
             resolveEffectiveTopTabLiquidGlassEnabled(
                 isLiquidGlassEnabled = true,
                 interactionBudget = HomeInteractionMotionBudget.FULL
             )
         )
-        assertFalse(
+        assertTrue(
             resolveEffectiveTopTabLiquidGlassEnabled(
                 isLiquidGlassEnabled = true,
                 interactionBudget = HomeInteractionMotionBudget.REDUCED
+            )
+        )
+        assertFalse(
+            resolveEffectiveTopTabLiquidGlassEnabled(
+                isLiquidGlassEnabled = false,
+                interactionBudget = HomeInteractionMotionBudget.FULL
             )
         )
     }
@@ -696,6 +702,53 @@ class TopTabStylePolicyTest {
     }
 
     @Test
+    fun `md3 and miuix use screenshot underline when liquid glass is off`() {
+        assertTrue(
+            shouldUsePlainMd3TopTabUnderline(
+                uiPreset = UiPreset.MD3,
+                liquidGlassEnabled = false
+            )
+        )
+        assertFalse(
+            shouldUsePlainMd3TopTabUnderline(
+                uiPreset = UiPreset.MD3,
+                liquidGlassEnabled = true
+            )
+        )
+        assertFalse(
+            shouldUsePlainMd3TopTabUnderline(
+                uiPreset = UiPreset.IOS,
+                liquidGlassEnabled = false
+            )
+        )
+    }
+
+    @Test
+    fun `md3 top tabs remove outer dock when liquid glass is off`() {
+        assertFalse(
+            shouldDrawHomeTopTabOuterChromeSurface(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3,
+                materialMode = TopTabMaterialMode.BLUR
+            )
+        )
+        assertFalse(
+            shouldDrawHomeTopTabOuterChromeSurface(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3,
+                materialMode = TopTabMaterialMode.PLAIN
+            )
+        )
+        assertTrue(
+            shouldDrawHomeTopTabOuterChromeSurface(
+                uiPreset = UiPreset.MD3,
+                androidNativeVariant = AndroidNativeVariant.MATERIAL3,
+                materialMode = TopTabMaterialMode.LIQUID_GLASS
+            )
+        )
+    }
+
+    @Test
     fun `md3 top tabs use underline row semantics and tighter action shape`() {
         assertEquals(
             "UNDERLINE_FIXED",
@@ -844,7 +897,7 @@ class TopTabStylePolicyTest {
             .substringBefore("@Composable\nprivate fun MiuixCategoryTabRow(")
 
         assertTrue(categoryTabRowSource.contains("val hasSkinStickerIcons = topTabSkinIconPaths.isNotEmpty() || !partitionSkinIconPath.isNullOrBlank()"))
-        assertTrue(categoryTabRowSource.contains("if (!hasSkinStickerIcons && !skinPlainStyle && presetStyle.renderer == HomeTopTabRenderer.MIUIX)"))
+        assertTrue(categoryTabRowSource.contains("if (showPartitionAction && !hasSkinStickerIcons && !skinPlainStyle && presetStyle.renderer == HomeTopTabRenderer.MIUIX)"))
         assertTrue(categoryTabRowSource.contains("topTabSkinIconPaths = topTabSkinIconPaths"))
         assertTrue(categoryTabRowSource.contains("partitionSkinIconPath = partitionSkinIconPath"))
     }

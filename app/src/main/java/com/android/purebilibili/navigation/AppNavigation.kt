@@ -947,7 +947,13 @@ fun AppNavigation(
                     pushNavigation3Key(BiliPaiNavKey.DynamicDetail(action.dynamicId))
                 }
                 is MessageLinkNavigationAction.DynamicComment -> {
-                    pushNavigation3Key(BiliPaiNavKey.DynamicDetail(action.dynamicId))
+                    pushNavigation3Key(
+                        BiliPaiNavKey.DynamicDetail(
+                            dynamicId = action.dynamicId,
+                            commentRootRpid = action.rootReplyId,
+                            commentTargetRpid = action.targetReplyId
+                        )
+                    )
                 }
                 is MessageLinkNavigationAction.Space -> {
                     pushNavigation3Key(BiliPaiNavKey.Space(action.mid))
@@ -965,6 +971,9 @@ fun AppNavigation(
                     action.musicId.toLongOrNull()
                         ?.let { pushNavigation3Key(BiliPaiNavKey.MusicDetail(it)) }
                         ?: pushNavigation3Key(BiliPaiNavKey.Web(rawLink))
+                }
+                is MessageLinkNavigationAction.Article -> {
+                    pushNavigation3Key(BiliPaiNavKey.ArticleDetail(action.articleId))
                 }
                 is MessageLinkNavigationAction.Web -> {
                     pushNavigation3Key(BiliPaiNavKey.Web(action.url))
@@ -1184,6 +1193,16 @@ fun AppNavigation(
                                 onDynamicClick = { pushNavigation3Route(ScreenRoutes.Dynamic.route) },
                                 onHistoryClick = { pushNavigation3Route(ScreenRoutes.History.route) },
                                 onPartitionClick = { pushNavigation3Key(BiliPaiNavKey.Partition) },
+                                partitionVideoSourceRoute = ScreenRoutes.Partition.route,
+                                onPartitionVideoClick = { video ->
+                                    navigateToVideoInNavigation3(
+                                        bvid = video.bvid,
+                                        cid = video.cid,
+                                        coverUrl = video.pic,
+                                        initialVertical = video.isVertical,
+                                        sourceRoute = ScreenRoutes.Partition.route
+                                    )
+                                },
                                 onLiveClick = { roomId, title, uname ->
                                     pushNavigation3Route(ScreenRoutes.Live.createRoute(roomId, title, uname))
                                 },
@@ -1859,14 +1878,14 @@ fun AppNavigation(
                                             )
                                         )
                                     },
-                                    onCollectionClick = { collectionId, collectionMid, title, ownerName ->
+                                    onCollectionClick = { route ->
                                         pushNavigation3Key(
                                             BiliPaiNavKey.SeasonSeriesDetail(
-                                                type = "season",
-                                                id = collectionId,
-                                                mid = collectionMid,
-                                                title = title,
-                                                ownerName = ownerName
+                                                type = route.type,
+                                                id = route.id,
+                                                mid = route.mid,
+                                                title = route.title,
+                                                ownerName = route.ownerName
                                             )
                                         )
                                     },
@@ -1918,8 +1937,8 @@ fun AppNavigation(
                             }
                         BiliPaiNavEntryContentRole.PARTITION -> com.android.purebilibili.feature.partition.PartitionScreen(
                                 onBack = { performSystemBackAction() },
-                                onPartitionClick = { id, name ->
-                                    pushNavigation3Key(BiliPaiNavKey.Category(tid = id, name = name))
+                                onVideoClick = { bvid, cid, cover ->
+                                    navigateToVideoInNavigation3(bvid, cid, cover)
                                 }
                             )
                         BiliPaiNavEntryContentRole.CATEGORY -> {
@@ -1957,14 +1976,14 @@ fun AppNavigation(
                                     onVideoClick = { bvid, cid, cover ->
                                         navigateToVideoInNavigation3(bvid, cid, cover)
                                     },
-                                    onCollectionClick = { collectionId, collectionMid, collectionTitle, ownerName ->
+                                    onCollectionClick = { route ->
                                         pushNavigation3Key(
                                             BiliPaiNavKey.SeasonSeriesDetail(
-                                                type = "season",
-                                                id = collectionId,
-                                                mid = collectionMid,
-                                                title = collectionTitle,
-                                                ownerName = ownerName
+                                                type = route.type,
+                                                id = route.id,
+                                                mid = route.mid,
+                                                title = route.title,
+                                                ownerName = route.ownerName
                                             )
                                         )
                                     }
@@ -1976,6 +1995,14 @@ fun AppNavigation(
                                     onBack = { performSystemBackAction() },
                                     onBangumiClick = { seasonId ->
                                         pushNavigation3Key(BiliPaiNavKey.BangumiDetail(seasonId = seasonId))
+                                    },
+                                    onBangumiEpisodeClick = { seasonId, epId ->
+                                        pushNavigation3Key(
+                                            BiliPaiNavKey.BangumiDetail(
+                                                seasonId = seasonId,
+                                                epId = epId
+                                            )
+                                        )
                                     },
                                     initialType = bangumiKey.initialType
                                 )
@@ -2116,6 +2143,8 @@ fun AppNavigation(
                                 val dynamicKey = key as BiliPaiNavKey.DynamicDetail
                                 com.android.purebilibili.feature.dynamic.DynamicDetailScreen(
                                     dynamicId = dynamicKey.dynamicId,
+                                    openCommentRootRpid = dynamicKey.commentRootRpid,
+                                    openCommentTargetRpid = dynamicKey.commentTargetRpid,
                                     onBack = { performSystemBackAction() },
                                     onVideoClick = { bvid -> navigateToVideoInNavigation3(bvid, 0L, "") },
                                     onBangumiClick = { seasonId, epId ->

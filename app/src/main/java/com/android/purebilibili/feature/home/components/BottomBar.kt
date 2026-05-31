@@ -3752,13 +3752,16 @@ private fun KernelSuBottomBarShell(
 }
 
 @Composable
-private fun BoxScope.KernelSuBottomBarIndicatorLayer(
+internal fun BoxScope.KernelSuBottomBarIndicatorLayer(
     visible: Boolean,
     dockContentAlpha: Float,
     indicatorTranslationXPx: Float,
+    indicatorTranslationYPx: Float = 0f,
     indicatorPanelOffsetPx: Float,
+    indicatorPanelOffsetYPx: Float = 0f,
     indicatorSettleReboundTransform: BottomBarClickPulseTransform,
     indicatorWidth: Dp,
+    indicatorHeight: Dp = 56.dp,
     shellShape: androidx.compose.ui.graphics.Shape,
     liquidGlassPreset: BottomBarLiquidGlassPreset,
     contentBackdrop: Backdrop?,
@@ -3775,10 +3778,12 @@ private fun BoxScope.KernelSuBottomBarIndicatorLayer(
     isDragging: Boolean,
     indicatorLayerScaleProgress: Float,
     bottomBarMotionSpec: com.android.purebilibili.core.ui.motion.BottomBarMotionSpec,
-    isDarkTheme: Boolean
+    isDarkTheme: Boolean,
+    swapMotionAxes: Boolean = false,
+    indicatorAlignment: Alignment = Alignment.CenterStart
 ) {
     if (!visible) return
-    val indicatorLayerTransform = if (glassEnabled) {
+    val rawIndicatorLayerTransform = if (glassEnabled) {
         resolveBottomBarIndicatorLayerTransform(
             motionProgress = motionProgress,
             velocityItemsPerSecond = velocityItemsPerSecond,
@@ -3789,17 +3794,26 @@ private fun BoxScope.KernelSuBottomBarIndicatorLayer(
     } else {
         BottomBarIndicatorLayerTransform(scaleX = 1f, scaleY = 1f)
     }
+    val indicatorLayerTransform = if (swapMotionAxes) {
+        BottomBarIndicatorLayerTransform(
+            scaleX = rawIndicatorLayerTransform.scaleY,
+            scaleY = rawIndicatorLayerTransform.scaleX
+        )
+    } else {
+        rawIndicatorLayerTransform
+    }
     Box(
         modifier = Modifier
             .alpha(dockContentAlpha)
             .graphicsLayer {
                 translationX = indicatorTranslationXPx + indicatorPanelOffsetPx
+                translationY = indicatorTranslationYPx + indicatorPanelOffsetYPx
                 scaleX = indicatorSettleReboundTransform.scaleX
                 scaleY = indicatorSettleReboundTransform.scaleY
             }
             .width(indicatorWidth)
-            .height(56.dp)
-            .align(Alignment.CenterStart)
+            .height(indicatorHeight)
+            .align(indicatorAlignment)
             .run {
                 val indicatorBackdrop = if (shouldUseBottomBarCombinedIndicatorBackdrop(liquidGlassPreset)) {
                     contentBackdrop

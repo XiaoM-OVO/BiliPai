@@ -367,6 +367,7 @@ data class HomeSettings(
     val bottomBarLabelMode: Int = 0,       // (0=图标+文字, 1=仅图标, 2=仅文字)
     val topTabLabelMode: Int = 2,          // (0=图标+文字, 1=仅图标, 2=仅文字)
     val homeTopRightAction: HomeTopRightAction = HomeTopRightAction.SETTINGS,
+    val homeTopLayoutOrder: HomeTopLayoutOrder = HomeTopLayoutOrder.SEARCH_THEN_TABS,
     val isHeaderBlurEnabled: Boolean = true,
     val headerBlurMode: HomeHeaderBlurMode = HomeHeaderBlurMode.FOLLOW_PRESET,
     val isBottomBarBlurEnabled: Boolean = true,
@@ -383,7 +384,8 @@ data class HomeSettings(
     val liquidGlassMode: LiquidGlassMode = LiquidGlassMode.BALANCED,
     val liquidGlassStrength: Float = 0.52f,
     val liquidGlassProgress: Float = 0.5f,
-    val isHeaderCollapseEnabled: Boolean = true, // [New] 首页顶部栏自动收缩开关
+    val homeHeaderCollapseMode: HomeHeaderCollapseMode = HomeHeaderCollapseMode.SEARCH_ONLY,
+    val isHeaderCollapseEnabled: Boolean = true,
     val gridColumnCount: Int = 0, // [New] 网格列数 (0=自动, 1-6=固定)
     val homeFeedCardWidthPreset: HomeFeedCardWidthPreset = HomeFeedCardWidthPreset.AUTO,
     val cardAnimationEnabled: Boolean = false,    //  卡片进场动画（默认关闭）
@@ -447,6 +449,40 @@ enum class HomeTopRightAction(val value: Int, val label: String) {
     companion object {
         fun fromValue(value: Int): HomeTopRightAction =
             entries.find { it.value == value } ?: SETTINGS
+    }
+}
+
+enum class HomeTopLayoutOrder(val value: Int, val label: String) {
+    SEARCH_THEN_TABS(0, "搜索在上"),
+    TABS_THEN_SEARCH(1, "标签在上");
+
+    companion object {
+        fun fromValue(value: Int): HomeTopLayoutOrder =
+            entries.find { it.value == value } ?: SEARCH_THEN_TABS
+    }
+}
+
+enum class HomeHeaderCollapseMode(
+    val value: Int,
+    val label: String,
+    val description: String,
+    val collapseSearch: Boolean,
+    val collapseTabs: Boolean
+) {
+    SEARCH_ONLY(0, "仅搜索", "列表下滑时只收起搜索行，标签页保持显示", true, false),
+    TABS_ONLY(1, "仅标签", "列表下滑时只收起标签页，搜索行保持显示", false, true),
+    BOTH(2, "都折叠", "搜索行和标签页都会随列表下滑收起", true, true),
+    OFF(3, "都不折叠", "搜索行和标签页始终展开", false, false);
+
+    val hasAnyCollapse: Boolean
+        get() = collapseSearch || collapseTabs
+
+    companion object {
+        fun fromValue(value: Int): HomeHeaderCollapseMode =
+            entries.find { it.value == value } ?: SEARCH_ONLY
+
+        fun fromLegacyBoolean(value: Boolean): HomeHeaderCollapseMode =
+            if (value) SEARCH_ONLY else OFF
     }
 }
 
@@ -547,8 +583,8 @@ data class AppNavigationSettings(
 )
 
 data class HomeTopTabSettings(
-    val orderIds: List<String> = listOf("RECOMMEND", "FOLLOW", "POPULAR", "LIVE", "GAME"),
-    val visibleIds: Set<String> = setOf("RECOMMEND", "FOLLOW", "POPULAR", "LIVE", "GAME")
+    val orderIds: List<String> = listOf("RECOMMEND", "FOLLOW", "POPULAR", "LIVE", "GAME", "PARTITION"),
+    val visibleIds: Set<String> = setOf("RECOMMEND", "FOLLOW", "POPULAR", "LIVE", "GAME", "PARTITION")
 )
 
 data class PlayerInteractionSettings(
@@ -868,14 +904,15 @@ object SettingsManager {
         const val TEXT_ONLY = 2
     }
 
-    private const val DEFAULT_TOP_TAB_ORDER = "RECOMMEND,FOLLOW,POPULAR,LIVE,GAME"
-    private const val DEFAULT_TOP_TAB_VISIBLE = "RECOMMEND,FOLLOW,POPULAR,LIVE,GAME"
+    private const val DEFAULT_TOP_TAB_ORDER = "RECOMMEND,FOLLOW,POPULAR,LIVE,GAME,PARTITION"
+    private const val DEFAULT_TOP_TAB_VISIBLE = "RECOMMEND,FOLLOW,POPULAR,LIVE,GAME,PARTITION"
     private const val DEFAULT_DYNAMIC_TAB_VISIBLE = "all,video,pgc,article,up"
     //  [新增] 模糊效果开关
     private val KEY_HEADER_BLUR_ENABLED = booleanPreferencesKey("header_blur_enabled")
     private val KEY_HOME_HEADER_BLUR_MODE = intPreferencesKey("home_header_blur_mode")
-    //  [新增] 首页顶部栏自动收缩 (Shrink)
     private val KEY_HEADER_COLLAPSE_ENABLED = booleanPreferencesKey("header_collapse_enabled")
+    private val KEY_HOME_HEADER_COLLAPSE_MODE = intPreferencesKey("home_header_collapse_mode")
+    private val KEY_HOME_TOP_LAYOUT_ORDER = intPreferencesKey("home_top_layout_order")
     private val KEY_BOTTOM_BAR_BLUR_ENABLED = booleanPreferencesKey("bottom_bar_blur_enabled")
     private val KEY_TOP_BAR_LIQUID_GLASS_ENABLED = booleanPreferencesKey("top_bar_liquid_glass_enabled")
     private val KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED = booleanPreferencesKey("bottom_bar_liquid_glass_enabled")
@@ -975,6 +1012,11 @@ object SettingsManager {
             rawMode = preferences[KEY_HOME_HEADER_BLUR_MODE],
             legacyEnabled = preferences[KEY_HEADER_BLUR_ENABLED]
         )
+        val headerCollapseMode = preferences[KEY_HOME_HEADER_COLLAPSE_MODE]
+            ?.let(HomeHeaderCollapseMode::fromValue)
+            ?: HomeHeaderCollapseMode.fromLegacyBoolean(
+                preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true
+            )
         val legacyLiquidGlassEnabled = preferences[KEY_LIQUID_GLASS_ENABLED] ?: true
         return HomeSettings(
             displayMode = preferences[KEY_DISPLAY_MODE] ?: 0,
@@ -984,9 +1026,11 @@ object SettingsManager {
             homeTopRightAction = HomeTopRightAction.fromValue(
                 preferences[KEY_HOME_TOP_RIGHT_ACTION] ?: HomeTopRightAction.SETTINGS.value
             ),
+            homeTopLayoutOrder = HomeTopLayoutOrder.fromValue(
+                preferences[KEY_HOME_TOP_LAYOUT_ORDER] ?: HomeTopLayoutOrder.SEARCH_THEN_TABS.value
+            ),
             isHeaderBlurEnabled = headerBlurMode != HomeHeaderBlurMode.ALWAYS_OFF,
             headerBlurMode = headerBlurMode,
-            isHeaderCollapseEnabled = preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true,
             isBottomBarBlurEnabled = preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] ?: true,
             isTopBarLiquidGlassEnabled = false,
             isBottomBarLiquidGlassEnabled = preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] ?: legacyLiquidGlassEnabled,
@@ -1009,6 +1053,8 @@ object SettingsManager {
             liquidGlassMode = FIXED_LIQUID_GLASS_MODE,
             liquidGlassStrength = FIXED_LIQUID_GLASS_STRENGTH,
             liquidGlassProgress = FIXED_LIQUID_GLASS_PROGRESS,
+            homeHeaderCollapseMode = headerCollapseMode,
+            isHeaderCollapseEnabled = headerCollapseMode.hasAnyCollapse,
             gridColumnCount = preferences[KEY_GRID_COLUMN_COUNT] ?: 0,
             homeFeedCardWidthPreset = HomeFeedCardWidthPreset.fromValue(
                 preferences[KEY_HOME_FEED_CARD_WIDTH_PRESET] ?: HomeFeedCardWidthPreset.AUTO.value
@@ -2122,6 +2168,19 @@ object SettingsManager {
         }
     }
 
+    fun getHomeTopLayoutOrder(context: Context): Flow<HomeTopLayoutOrder> = context.settingsDataStore.data
+        .map { preferences ->
+            HomeTopLayoutOrder.fromValue(
+                preferences[KEY_HOME_TOP_LAYOUT_ORDER] ?: HomeTopLayoutOrder.SEARCH_THEN_TABS.value
+            )
+        }
+
+    suspend fun setHomeTopLayoutOrder(context: Context, order: HomeTopLayoutOrder) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_HOME_TOP_LAYOUT_ORDER] = order.value
+        }
+    }
+
     //  [新增] --- 顶部标签顺序配置 ---
     fun getTopTabOrder(context: Context): Flow<List<String>> = context.settingsDataStore.data.map { prefs ->
         val orderString = prefs[KEY_TOP_TAB_ORDER] ?: DEFAULT_TOP_TAB_ORDER
@@ -2227,12 +2286,37 @@ object SettingsManager {
         }
     }
     
-    //  [新增] --- 首页顶部栏自动收缩 ---
+    //  首页顶部栏自动收缩：兼容旧布尔开关，同时支持搜索行/标签页独立折叠。
+    fun getHomeHeaderCollapseMode(context: Context): Flow<HomeHeaderCollapseMode> =
+        context.settingsDataStore.data.map { preferences ->
+            preferences[KEY_HOME_HEADER_COLLAPSE_MODE]
+                ?.let(HomeHeaderCollapseMode::fromValue)
+                ?: HomeHeaderCollapseMode.fromLegacyBoolean(
+                    preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true
+                )
+        }
+
+    suspend fun setHomeHeaderCollapseMode(context: Context, mode: HomeHeaderCollapseMode) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_HOME_HEADER_COLLAPSE_MODE] = mode.value
+            preferences[KEY_HEADER_COLLAPSE_ENABLED] = mode.hasAnyCollapse
+        }
+    }
+
     fun getHeaderCollapseEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true }
+        .map { preferences ->
+            preferences[KEY_HOME_HEADER_COLLAPSE_MODE]
+                ?.let(HomeHeaderCollapseMode::fromValue)
+                ?.hasAnyCollapse
+                ?: (preferences[KEY_HEADER_COLLAPSE_ENABLED] ?: true)
+        }
 
     suspend fun setHeaderCollapseEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> preferences[KEY_HEADER_COLLAPSE_ENABLED] = value }
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_HEADER_COLLAPSE_ENABLED] = value
+            preferences[KEY_HOME_HEADER_COLLAPSE_MODE] =
+                HomeHeaderCollapseMode.fromLegacyBoolean(value).value
+        }
     }
     
     //  [新增] --- 底栏模糊效果 ---
@@ -5212,7 +5296,6 @@ object SettingsManager {
             StringShareablePreferenceDefinition(KEY_TOP_TAB_VISIBLE_TABS, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_DYNAMIC_TAB_VISIBLE_TABS, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_HEADER_BLUR_ENABLED, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(KEY_HEADER_COLLAPSE_ENABLED, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_BLUR_ENABLED, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_LIQUID_GLASS_PRESET, SettingsShareSection.APPEARANCE),
@@ -5359,6 +5442,9 @@ object SettingsManager {
             StringShareablePreferenceDefinition(KEY_BOTTOM_BAR_VISIBLE_TABS, SettingsShareSection.NAVIGATION),
             StringShareablePreferenceDefinition(KEY_BOTTOM_BAR_ITEM_COLORS, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_VISIBILITY_MODE, SettingsShareSection.NAVIGATION),
+            IntShareablePreferenceDefinition(KEY_HOME_TOP_LAYOUT_ORDER, SettingsShareSection.NAVIGATION),
+            IntShareablePreferenceDefinition(KEY_HOME_HEADER_COLLAPSE_MODE, SettingsShareSection.NAVIGATION),
+            BooleanShareablePreferenceDefinition(KEY_HEADER_COLLAPSE_ENABLED, SettingsShareSection.NAVIGATION),
             BooleanShareablePreferenceDefinition(KEY_TABLET_NAVIGATION_MODE, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_DYNAMIC_PAGE_LAYOUT_DIRECTION, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_FEED_API_TYPE, SettingsShareSection.NAVIGATION),

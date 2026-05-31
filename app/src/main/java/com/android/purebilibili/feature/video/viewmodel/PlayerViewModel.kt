@@ -128,6 +128,13 @@ import com.android.purebilibili.feature.video.subtitle.resolveDefaultSubtitleLan
 
 private const val PLAYBACK_CDN_FIRST_FRAME_FALLBACK_TIMEOUT_MS = 2_500L
 
+data class CommentMentionSearchUiState(
+    val query: String = "",
+    val users: List<MentionSearchUser> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
 data class SponsorSkipUiState(
     val visible: Boolean = false,
     val segmentId: String? = null,
@@ -3440,6 +3447,7 @@ class PlayerViewModel : ViewModel() {
     fun hideCommentInputDialog() {
         _showCommentDialog.value = false
         clearReplyingTo()
+        clearCommentMentionSearch()
     }
 
     // ========== 弹幕发送 ==========
@@ -3718,6 +3726,11 @@ class PlayerViewModel : ViewModel() {
     
     private val _replyingToComment = MutableStateFlow<com.android.purebilibili.data.model.response.ReplyItem?>(null)
     val replyingToComment = _replyingToComment.asStateFlow()
+
+    private val _commentMentionSearchState = MutableStateFlow(CommentMentionSearchUiState())
+    val commentMentionSearchState = _commentMentionSearchState.asStateFlow()
+
+    private var commentMentionSearchJob: Job? = null
     
     fun setCommentInput(text: String) {
         _commentInput.value = text
@@ -3729,6 +3742,49 @@ class PlayerViewModel : ViewModel() {
     
     fun clearReplyingTo() {
         _replyingToComment.value = null
+    }
+
+    fun searchCommentMentionUsers(query: String) {
+        if (_commentMentionSearchState.value.query == query && commentMentionSearchJob?.isActive == true) return
+
+        commentMentionSearchJob?.cancel()
+        _commentMentionSearchState.update {
+            it.copy(query = query, isLoading = true, errorMessage = null)
+        }
+        commentMentionSearchJob = viewModelScope.launch {
+            if (query.isNotBlank()) {
+                delay(250L)
+            }
+            com.android.purebilibili.data.repository.CommentRepository
+                .searchMentionUsers(query)
+                .onSuccess { users ->
+                    _commentMentionSearchState.update {
+                        if (it.query == query) {
+                            it.copy(users = users, isLoading = false, errorMessage = null)
+                        } else {
+                            it
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    _commentMentionSearchState.update {
+                        if (it.query == query) {
+                            it.copy(
+                                users = emptyList(),
+                                isLoading = false,
+                                errorMessage = error.message ?: "搜索@好友失败"
+                            )
+                        } else {
+                            it
+                        }
+                    }
+                }
+        }
+    }
+
+    fun clearCommentMentionSearch() {
+        commentMentionSearchJob?.cancel()
+        _commentMentionSearchState.value = CommentMentionSearchUiState()
     }
     
     /**
@@ -5561,7 +5617,8 @@ class PlayerViewModel : ViewModel() {
         targetTitle: String,
         targetLabel: String,
         targetCover: String,
-        qualityId: Int
+        qualityId: Int,
+        options: com.android.purebilibili.feature.download.DownloadOptions = com.android.purebilibili.feature.download.DownloadOptions()
     ): com.android.purebilibili.feature.download.DownloadTask? {
         val qualityDesc = resolveDownloadQualityDescription(current, qualityId)
         val isCurrentTarget = targetBvid == currentBvid && targetCid == currentCid
@@ -5610,6 +5667,7 @@ class PlayerViewModel : ViewModel() {
         }
 
         return com.android.purebilibili.feature.download.DownloadTask(
+            aid = current.info.aid,
             bvid = targetBvid,
             cid = targetCid,
             title = resolvedTitle,
@@ -5626,11 +5684,15 @@ class PlayerViewModel : ViewModel() {
             qualityDesc = qualityDesc,
             videoUrl = resolvedUrls.first,
             audioUrl = resolvedUrls.second,
-            isVerticalVideo = candidate?.isVerticalVideo ?: (current.info.dimension?.isVertical == true)
+            isVerticalVideo = candidate?.isVerticalVideo ?: (current.info.dimension?.isVertical == true),
+            options = options
         )
     }
     
-    fun downloadWithQuality(qualityId: Int) {
+    fun downloadWithQuality(
+        qualityId: Int,
+        options: com.android.purebilibili.feature.download.DownloadOptions = com.android.purebilibili.feature.download.DownloadOptions()
+    ) {
         val current = _uiState.value as? PlayerUiState.Success ?: return
         _showDownloadDialog.value = false
         
@@ -5642,7 +5704,8 @@ class PlayerViewModel : ViewModel() {
                 targetTitle = current.info.title,
                 targetLabel = current.info.title,
                 targetCover = current.info.pic,
-                qualityId = qualityId
+                qualityId = qualityId,
+                options = options
             )
             
             if (task == null) {
@@ -5666,6 +5729,7 @@ class PlayerViewModel : ViewModel() {
 
     internal fun downloadBatchWithQuality(
         qualityId: Int,
+        options: com.android.purebilibili.feature.download.DownloadOptions = com.android.purebilibili.feature.download.DownloadOptions(),
         candidates: List<com.android.purebilibili.feature.download.BatchDownloadCandidate>
     ) {
         val current = _uiState.value as? PlayerUiState.Success ?: return
@@ -5693,7 +5757,8 @@ class PlayerViewModel : ViewModel() {
                     targetTitle = candidate.title,
                     targetLabel = candidate.label,
                     targetCover = candidate.cover,
-                    qualityId = qualityId
+                    qualityId = qualityId,
+                    options = options
                 )
                 if (task == null) {
                     failedCount += 1

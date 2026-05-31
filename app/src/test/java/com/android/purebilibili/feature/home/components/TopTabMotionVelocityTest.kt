@@ -1,7 +1,10 @@
 package com.android.purebilibili.feature.home.components
 
 import androidx.compose.ui.graphics.Color
+import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TopTabMotionVelocityTest {
@@ -184,6 +187,64 @@ class TopTabMotionVelocityTest {
     }
 
     @Test
+    fun `top tab long press drag only starts inside visible indicator bounds`() {
+        val inside = shouldStartTopTabIndicatorLongPressDrag(
+            pointerX = 134f,
+            indicatorPosition = 2f,
+            itemWidthPx = 72f,
+            rowScrollOffsetPx = 64f,
+            contentPaddingPx = 2f,
+            indicatorWidthPx = 56f
+        )
+        val outside = shouldStartTopTabIndicatorLongPressDrag(
+            pointerX = 80f,
+            indicatorPosition = 2f,
+            itemWidthPx = 72f,
+            rowScrollOffsetPx = 64f,
+            contentPaddingPx = 2f,
+            indicatorWidthPx = 56f
+        )
+
+        assertEquals(true, inside)
+        assertEquals(false, outside)
+    }
+
+    @Test
+    fun `top tab indicator hit bounds account for row scroll offset`() {
+        val indicatorLeft = resolveTopTabIndicatorHitLeftPx(
+            indicatorPosition = 3f,
+            itemWidthPx = 80f,
+            rowScrollOffsetPx = 120f,
+            contentPaddingPx = 0f,
+            indicatorWidthPx = 32f
+        )
+
+        assertEquals(144f, indicatorLeft, 0.001f)
+    }
+
+    @Test
+    fun `top tab long press drag is attached to selected item instead of lazy row scroll container`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/TopBar.kt")
+        val lazyRowSource = source
+            .substringAfter("LazyRow(")
+            .substringBefore("itemsIndexed(")
+
+        assertTrue(source.contains("topTabSelectedItemLongPressDrag("))
+        assertFalse(lazyRowSource.contains("topTabSelectedItemLongPressDrag("))
+    }
+
+    @Test
+    fun `top tab drag does not change search or list layout clearance`() {
+        val headerSource = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/iOSHomeHeader.kt")
+        val homeSource = loadSource("app/src/main/java/com/android/purebilibili/feature/home/HomeScreen.kt")
+
+        assertTrue(headerSource.contains("translationY = searchContentTranslationYPx"))
+        assertFalse(headerSource.contains("onIndicatorClearanceChanged = { clearance ->"))
+        assertFalse(homeSource.contains("topTabIndicatorClearance"))
+        assertFalse(homeSource.contains("baseListTopPadding +"))
+    }
+
+    @Test
     fun `ios capsule uses moving shared container instead of per item fill`() {
         assertEquals(
             false,
@@ -257,5 +318,15 @@ class TopTabMotionVelocityTest {
         )
 
         assertEquals(TopTabScrollTarget(firstVisibleItemIndex = 1, firstVisibleItemScrollOffsetPx = 0), target)
+    }
+
+    private fun loadSource(path: String): String {
+        val normalizedPath = path.removePrefix("app/")
+        val sourceFile = listOf(
+            File(path),
+            File(normalizedPath)
+        ).firstOrNull { it.exists() }
+        require(sourceFile != null) { "Cannot locate $path from ${File(".").absolutePath}" }
+        return sourceFile.readText()
     }
 }
