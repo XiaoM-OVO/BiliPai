@@ -1329,7 +1329,7 @@ data class DynamicRepostRequest(
 @kotlinx.serialization.Serializable
 data class DynamicRepostDynReq(
     val content: DynamicRepostContent,
-    val scene: Int = 4,
+    val scene: Int,
     val attach_card: kotlinx.serialization.json.JsonObject?
 )
 
@@ -1341,8 +1341,8 @@ data class DynamicRepostContent(
 @kotlinx.serialization.Serializable
 data class DynamicRepostContentItem(
     val raw_text: String,
-    val type: Int = 1,
-    val biz_id: String = ""
+    val type: Int,
+    val biz_id: String
 )
 
 @kotlinx.serialization.Serializable
@@ -1357,11 +1357,18 @@ internal fun buildDynamicRepostRequest(
     val contents = if (content.isBlank()) {
         emptyList()
     } else {
-        listOf(DynamicRepostContentItem(raw_text = content))
+        listOf(
+            DynamicRepostContentItem(
+                raw_text = content,
+                type = 1,
+                biz_id = ""
+            )
+        )
     }
     return DynamicRepostRequest(
         dyn_req = DynamicRepostDynReq(
             content = DynamicRepostContent(contents = contents),
+            scene = 4,
             attach_card = null
         ),
         web_repost_src = DynamicWebRepostSource(dyn_id_str = dynamicId)

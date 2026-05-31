@@ -77,6 +77,7 @@ class DynamicApiContractTest {
         assertEquals("977045888118554640", request.web_repost_src.dyn_id_str)
         assertEquals(4, request.dyn_req.scene)
         assertTrue(request.dyn_req.content.contents.isEmpty())
+        assertTrue(json.contains("\"scene\":4"))
         assertTrue(json.contains("\"attach_card\":null"))
     }
 
@@ -87,10 +88,14 @@ class DynamicApiContractTest {
             content = "转发动态"
         )
         val contentItem = request.dyn_req.content.contents.single()
+        val json = Json.encodeToString(request)
 
         assertEquals("转发动态", contentItem.raw_text)
         assertEquals(1, contentItem.type)
         assertEquals("", contentItem.biz_id)
+        assertTrue(json.contains("\"scene\":4"))
+        assertTrue(json.contains("\"type\":1"))
+        assertTrue(json.contains("\"biz_id\":\"\""))
     }
 
     @Test
