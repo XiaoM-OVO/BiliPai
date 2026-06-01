@@ -722,7 +722,7 @@ fun CommentInputDialog(
                                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                                 ) {
-                                                    items(emotes.size, key = { i -> emotes[i].text }) { i ->
+                                                    items(emotes.size, key = { i -> emotes[i].id }) { i ->
                                                         val emote = emotes[i]
                                                         Column(
                                                             horizontalAlignment = Alignment.CenterHorizontally,

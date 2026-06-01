@@ -279,7 +279,7 @@ class MainActivityAppCompatContractTest {
 
         assertTrue(
             Regex(
-                """SettingsManager\.getAppLanguage\(context\)\.collectAsState\(\s*initial = SettingsManager\.getAppLanguageSync\(context\)\s*\)"""
+                """SettingsManager\.getAppLanguage\(context\)\.collectAsStateWithLifecycle\(\s*initialValue = SettingsManager\.getAppLanguageSync\(context\)\s*\)"""
             ).containsMatchIn(mainActivitySource),
             "MainActivity should bootstrap appLanguage from cached settings to avoid locale flip-flop during recreation"
         )
@@ -292,7 +292,7 @@ class MainActivityAppCompatContractTest {
             "MainActivity should keep reading UiPreset when iOS and Android Native presets are available again"
         )
         assertTrue(
-            mainActivitySource.contains("collectAsState(initial = UiPreset.MD3)"),
+            mainActivitySource.contains("collectAsStateWithLifecycle(initialValue = UiPreset.MD3)"),
             "MainActivity should bootstrap first install with the MD3 preset"
         )
     }
