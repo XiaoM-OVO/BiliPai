@@ -72,7 +72,7 @@ internal fun resolveBottomBarGlassMaterialContainerColor(
     val isDarkSurface = surfaceColor.luminance() < 0.5f
     val alpha = when (preset) {
         BottomBarLiquidGlassPreset.BILIPAI_TUNED -> if (isDarkSurface) 0.30f else 0.38f
-        BottomBarLiquidGlassPreset.IOS26_REFINED -> if (isDarkSurface) 0.24f else 0.32f
+        BottomBarLiquidGlassPreset.IOS26_REFINED -> 0.40f
     }
     return surfaceColor.copy(alpha = alpha)
 }
@@ -100,32 +100,23 @@ private fun ios26BottomBarGlassMaterial(
     pressProgress: Float,
     scrollProgress: Float
 ): BottomBarGlassMaterialSpec {
-    val activity = maxOf(
-        motionProgress.coerceIn(0f, 1f) * 0.45f,
-        pressProgress.coerceIn(0f, 1f) * 0.35f
-    )
-    // iOS26 的颜色来自 backdrop 采样；壳层不再给 backdrop 乘提亮系数（那会放大滚动内容明暗、
-    // 停稳时闪烁）。滚动提亮改为只抬固定的内圈辉光 alpha：scrollProgress 是来自滚动布尔状态的
-    // 单调 tween（进 140ms / 出 420ms），均匀提亮整条壳层，结构上不可能出现明暗交替。
+    // iOS26 在底栏实际走 Miuix/KSU drawBackdrop 链；这条链不消费 shellShader。
+    // 因此壳层主材质必须使用 KSU 可见的 vibrancy + blur + lens 组合，否则只剩淡底色和弱内圈。
     val scrollLift = scrollProgress.coerceIn(0f, 1f)
     return BottomBarGlassMaterialSpec(
-        blurRadiusDp = lerp(7f, 6f, activity),
-        vibrancy = false,
-        shellRefractionHeightDp = 0f,
-        shellRefractionAmountDp = 0f,
+        blurRadiusDp = 4f,
+        vibrancy = true,
+        shellRefractionHeightDp = 24f,
+        shellRefractionAmountDp = 24f,
         shellChromaticAberration = 0f,
         foregroundTint = Color.Transparent,
-        highlightWidthScale = lerp(1.2f, 1.3f, activity),
-        shadowAlphaScale = 0.72f,
+        highlightWidthScale = 1f,
+        shadowAlphaScale = 1f,
         innerRimGlow = BottomBarInnerRimGlowSpec(
             radiusDp = 5f,
             alpha = lerp(0.09f, 0.16f, scrollLift)
         ),
-        shellShader = BottomBarShellShaderSpec(
-            thicknessDp = 11f,
-            refractIndex = 1.5f,
-            refractIntensity = 0.70f
-        )
+        shellShader = null
     )
 }
 

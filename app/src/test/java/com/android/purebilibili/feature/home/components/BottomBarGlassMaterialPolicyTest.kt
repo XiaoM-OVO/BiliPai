@@ -5,7 +5,6 @@ import com.android.purebilibili.core.store.BottomBarLiquidGlassPreset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -83,7 +82,7 @@ class BottomBarGlassMaterialPolicyTest {
     }
 
     @Test
-    fun `ios26 material spec uses thick edge shader shell`() {
+    fun `ios26 material spec uses KSU visible shell chain`() {
         val light = resolveBottomBarGlassMaterialSpec(
             preset = BottomBarLiquidGlassPreset.IOS26_REFINED,
             isDarkTheme = false,
@@ -101,18 +100,14 @@ class BottomBarGlassMaterialPolicyTest {
             pressProgress = 0f
         )
 
-        assertEquals(0f, light.shellRefractionHeightDp)
-        assertEquals(0f, light.shellRefractionAmountDp)
-        assertFalse(light.vibrancy)
+        assertEquals(24f, light.shellRefractionHeightDp)
+        assertEquals(24f, light.shellRefractionAmountDp)
+        assertTrue(light.vibrancy)
         assertEquals(0f, light.shellChromaticAberration)
-        val shader = light.shellShader
-        assertNotNull(shader)
-        assertEquals(11f, shader.thicknessDp)
-        assertEquals(1.5f, shader.refractIndex)
-        assertEquals(0.70f, shader.refractIntensity, 0.001f)
-        assertEquals(7f, light.blurRadiusDp)
-        assertEquals(1.2f, light.highlightWidthScale)
-        assertEquals(0.72f, light.shadowAlphaScale)
+        assertEquals(null, light.shellShader)
+        assertEquals(4f, light.blurRadiusDp)
+        assertEquals(1f, light.highlightWidthScale)
+        assertEquals(1f, light.shadowAlphaScale)
         assertEquals(BottomBarInnerRimGlowSpec(radiusDp = 5f, alpha = 0.09f), light.innerRimGlow)
         assertEquals(0f, light.foregroundTint.alpha, 0.001f)
         assertEquals(0f, dark.foregroundTint.alpha, 0.001f)
@@ -141,7 +136,8 @@ class BottomBarGlassMaterialPolicyTest {
 
         assertEquals(idle.foregroundTint.alpha, scrolling.foregroundTint.alpha, 0.001f)
         assertEquals(Color.Transparent, scrolling.foregroundTint)
-        assertEquals(idle.shellShader!!.thicknessDp, scrolling.shellShader!!.thicknessDp)
+        assertEquals(idle.shellRefractionHeightDp, scrolling.shellRefractionHeightDp)
+        assertEquals(idle.shellRefractionAmountDp, scrolling.shellRefractionAmountDp)
         assertEquals(
             resolveBottomBarEffectiveBackdropPresetProgress(
                 preset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
@@ -223,8 +219,8 @@ class BottomBarGlassMaterialPolicyTest {
         )
 
         assertEquals(0.38f, tuned.alpha, 0.005f)
-        assertEquals(0.32f, ios26Light.alpha, 0.005f)
-        assertEquals(0.24f, ios26Dark.alpha, 0.005f)
+        assertEquals(0.40f, ios26Light.alpha, 0.005f)
+        assertEquals(0.40f, ios26Dark.alpha, 0.005f)
     }
 
     @Test
