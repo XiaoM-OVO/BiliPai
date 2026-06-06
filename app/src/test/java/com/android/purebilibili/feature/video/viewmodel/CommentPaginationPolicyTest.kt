@@ -128,7 +128,8 @@ class CommentPaginationPolicyTest {
                 cursorIsEnd = true,
                 fetchedReplyCount = 2,
                 loadedReplyCount = 2,
-                remoteReplyCount = 8
+                remoteReplyCount = 80,
+                requestedPage = 1
             )
         )
         assertTrue(
@@ -136,7 +137,30 @@ class CommentPaginationPolicyTest {
                 cursorIsEnd = true,
                 fetchedReplyCount = 8,
                 loadedReplyCount = 8,
-                remoteReplyCount = 8
+                remoteReplyCount = 8,
+                requestedPage = 1
+            )
+        )
+    }
+
+    @Test
+    fun `sub reply sparse pages continue until declared final page`() {
+        assertFalse(
+            resolveSubReplyPageEnd(
+                cursorIsEnd = false,
+                fetchedReplyCount = 0,
+                loadedReplyCount = 4,
+                remoteReplyCount = 200,
+                requestedPage = 2
+            )
+        )
+        assertTrue(
+            resolveSubReplyPageEnd(
+                cursorIsEnd = false,
+                fetchedReplyCount = 0,
+                loadedReplyCount = 4,
+                remoteReplyCount = 200,
+                requestedPage = 10
             )
         )
     }

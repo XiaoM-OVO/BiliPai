@@ -1157,18 +1157,20 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
 
         val items = data.replies.orEmpty()
         val remoteTotalCount = resolveSubReplyRemoteTotalCount(data)
+        val totalCount = resolveSubReplyLoadedTotalCount(rootReply, items.size, remoteTotalCount)
         val isEnd = resolveSubReplyPageEnd(
             cursorIsEnd = data.cursor.isEnd,
             fetchedReplyCount = items.size,
             loadedReplyCount = items.size,
-            remoteReplyCount = remoteTotalCount
+            remoteReplyCount = totalCount,
+            requestedPage = 1
         )
         _subReplyState.value = SubReplyUiState(
             visible = true,
             rootReply = rootReply,
             items = items.toImmutableList(),
             baseItems = items.toImmutableList(),
-            totalCount = resolveSubReplyLoadedTotalCount(rootReply, items.size, remoteTotalCount),
+            totalCount = totalCount,
             isLoading = false,
             page = 1,
             basePage = 1,
@@ -1208,12 +1210,29 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
             result.onSuccess { data ->
                 val current = _subReplyState.value
                 val newItems = data.replies.orEmpty()
-                val isEnd = data.cursor.isEnd || newItems.isEmpty()
+                val updatedItems = if (page == 1) {
+                    newItems
+                } else {
+                    (current.items + newItems).distinctBy { it.rpid }
+                }
+                val totalCount = resolveSubReplyLoadedTotalCount(
+                    rootReply = current.rootReply,
+                    loadedReplyCount = updatedItems.size,
+                    remoteReplyCount = resolveSubReplyRemoteTotalCount(data)
+                )
+                val isEnd = resolveSubReplyPageEnd(
+                    cursorIsEnd = data.cursor.isEnd,
+                    fetchedReplyCount = newItems.size,
+                    loadedReplyCount = updatedItems.size,
+                    remoteReplyCount = totalCount,
+                    requestedPage = page
+                )
                 _subReplyState.value = resolveDynamicSubReplyStateAfterSuccess(
                     currentState = current,
                     newItems = newItems,
                     page = page,
-                    isEnd = isEnd
+                    isEnd = isEnd,
+                    totalCount = totalCount
                 )
             }.onFailure { error ->
                 _subReplyState.value = resolveDynamicSubReplyStateAfterFailure(

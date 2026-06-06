@@ -133,9 +133,9 @@ class SubReplyDetailPresentationPolicyTest {
     }
 
     @Test
-    fun `sub reply detail display count lets detail response correct stale root preview count`() {
+    fun `sub reply detail display count preserves larger root declared count`() {
         assertEquals(
-            1,
+            2,
             resolveSubReplyDetailDisplayCount(
                 rootReply = ReplyItem(count = 2, rcount = 2),
                 loadedReplyCount = 1,
@@ -157,9 +157,9 @@ class SubReplyDetailPresentationPolicyTest {
     }
 
     @Test
-    fun `sub reply loaded total count lets detail response correct stale root preview count`() {
+    fun `sub reply loaded total count preserves larger root declared count`() {
         assertEquals(
-            1,
+            2,
             resolveSubReplyLoadedTotalCount(
                 rootReply = ReplyItem(count = 2, rcount = 2),
                 loadedReplyCount = 1,

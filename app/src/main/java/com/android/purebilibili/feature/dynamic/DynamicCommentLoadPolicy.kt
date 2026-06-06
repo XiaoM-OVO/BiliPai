@@ -96,7 +96,8 @@ internal fun resolveDynamicSubReplyStateAfterSuccess(
     currentState: SubReplyUiState,
     newItems: List<ReplyItem>,
     page: Int,
-    isEnd: Boolean
+    isEnd: Boolean,
+    totalCount: Int = currentState.totalCount
 ): SubReplyUiState {
     val mergedItems = if (page == 1) {
         newItems
@@ -105,6 +106,7 @@ internal fun resolveDynamicSubReplyStateAfterSuccess(
     }
     return currentState.copy(
         items = mergedItems.toImmutableList(),
+        totalCount = totalCount,
         isLoading = false,
         page = page,
         isEnd = isEnd,

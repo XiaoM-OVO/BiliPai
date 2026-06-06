@@ -145,16 +145,16 @@ internal fun resolveSubReplyLoadedTotalCount(
     loadedReplyCount: Int,
     remoteReplyCount: Int
 ): Int {
-    if (remoteReplyCount > 0) {
-        return maxOf(remoteReplyCount, loadedReplyCount).coerceAtLeast(0)
-    }
-
     val rootDeclaredCount = maxOf(
         rootReply?.count ?: 0,
         rootReply?.rcount ?: 0,
         rootReply?.replies.orEmpty().size
     )
-    return maxOf(rootDeclaredCount, loadedReplyCount).coerceAtLeast(0)
+    return maxOf(
+        rootDeclaredCount,
+        remoteReplyCount,
+        loadedReplyCount
+    ).coerceAtLeast(0)
 }
 
 internal fun resolveSubReplyRemoteTotalCount(data: ReplyData): Int {
@@ -173,10 +173,16 @@ internal fun resolveSubReplyPageEnd(
     cursorIsEnd: Boolean,
     fetchedReplyCount: Int,
     loadedReplyCount: Int,
-    remoteReplyCount: Int
+    remoteReplyCount: Int,
+    requestedPage: Int = 1,
+    pageSize: Int = SUB_REPLY_PAGE_SIZE
 ): Boolean {
     if (remoteReplyCount > loadedReplyCount.coerceAtLeast(0)) {
-        return false
+        // 楼中楼接口可能因审核或折叠导致中间页很稀疏，不能因单页为空提前结束。
+        // 最多探测到外层声明总数对应的理论末页，避免异常计数导致无限请求。
+        val safePageSize = pageSize.coerceAtLeast(1)
+        val expectedLastPage = (remoteReplyCount + safePageSize - 1) / safePageSize
+        return requestedPage.coerceAtLeast(1) >= expectedLastPage
     }
     return cursorIsEnd || fetchedReplyCount <= 0
 }
@@ -485,7 +491,8 @@ class VideoCommentViewModel : ViewModel() {
                     cursorIsEnd = data.cursor.isEnd,
                     fetchedReplyCount = items.size,
                     loadedReplyCount = items.size,
-                    remoteReplyCount = remoteTotalCount
+                    remoteReplyCount = totalCount,
+                    requestedPage = 1
                 )
                 val nextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }
                 _subReplyState.value = SubReplyUiState(
@@ -713,7 +720,8 @@ class VideoCommentViewModel : ViewModel() {
                     cursorIsEnd = data.cursor.isEnd,
                     fetchedReplyCount = newItems.size,
                     loadedReplyCount = updatedItems.size,
-                    remoteReplyCount = remoteTotalCount
+                    remoteReplyCount = totalCount,
+                    requestedPage = page
                 )
 
                 _subReplyState.value = current.copy(

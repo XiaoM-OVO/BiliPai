@@ -173,12 +173,9 @@ internal fun resolveSubReplyDetailDisplayCount(
     loadedReplyCount: Int,
     remoteReplyCount: Int = 0
 ): Int {
-    if (remoteReplyCount > 0) {
-        return maxOf(remoteReplyCount, loadedReplyCount).coerceAtLeast(0)
-    }
-
     return maxOf(
         resolveReplyThreadCount(rootReply),
+        remoteReplyCount,
         loadedReplyCount
     ).coerceAtLeast(0)
 }
