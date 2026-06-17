@@ -151,6 +151,7 @@ private fun HomeHeroCarouselCard(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 0.dp,
+        shadowElevation = (transform.shadowElevationFraction * 10f).dp,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1.34f)
@@ -169,17 +170,48 @@ private fun HomeHeroCarouselCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             val normalizedCoverUrl = remember(video.pic) { FormatUtils.fixImageUrl(video.pic) }
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(normalizedCoverUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = video.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            if (activeForPlayback && previewUrl != null) {
-                MutedHeroVideoPlayer(url = previewUrl.orEmpty())
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationX = transform.contentParallaxFraction * size.width
+                        scaleX = transform.contentScale
+                        scaleY = transform.contentScale
+                    }
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(normalizedCoverUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = video.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                if (activeForPlayback && previewUrl != null) {
+                    MutedHeroVideoPlayer(url = previewUrl.orEmpty())
+                }
+            }
+            if (transform.edgeShadeAlpha > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            if (transform.edgeShadeStartFromLeft) {
+                                Brush.horizontalGradient(
+                                    0f to Color.Black.copy(alpha = transform.edgeShadeAlpha),
+                                    0.48f to Color.Transparent,
+                                    1f to Color.Transparent
+                                )
+                            } else {
+                                Brush.horizontalGradient(
+                                    0f to Color.Transparent,
+                                    0.52f to Color.Transparent,
+                                    1f to Color.Black.copy(alpha = transform.edgeShadeAlpha)
+                                )
+                            }
+                        )
+                )
             }
             Box(
                 modifier = Modifier

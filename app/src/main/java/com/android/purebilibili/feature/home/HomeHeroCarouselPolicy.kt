@@ -9,7 +9,12 @@ internal data class HomeHeroCarouselCardTransform(
     val cameraDistanceMultiplier: Float,
     val translationXFraction: Float,
     val pivotFractionX: Float,
-    val zIndex: Float
+    val zIndex: Float,
+    val contentParallaxFraction: Float,
+    val contentScale: Float,
+    val edgeShadeAlpha: Float,
+    val edgeShadeStartFromLeft: Boolean,
+    val shadowElevationFraction: Float
 )
 
 internal fun <T> selectHomeHeroCarouselItems(
@@ -39,13 +44,18 @@ internal fun resolveHomeHeroCarouselCardTransform(
         else -> 0.5f
     }
     return HomeHeroCarouselCardTransform(
-        rotationY = -clampedOffset * 58f,
-        scale = 1f - distance * 0.1f,
-        alpha = 1f - distance * 0.18f,
-        cameraDistanceMultiplier = 10f,
-        translationXFraction = clampedOffset * 0.1f,
+        rotationY = -clampedOffset * 66f,
+        scale = 1f - distance * 0.12f,
+        alpha = 1f - distance * 0.12f,
+        cameraDistanceMultiplier = 8f,
+        translationXFraction = clampedOffset * 0.14f,
         pivotFractionX = pivotFractionX,
-        zIndex = 1f - distance
+        zIndex = 1f - distance,
+        contentParallaxFraction = -clampedOffset * 0.08f,
+        contentScale = 1f + distance * 0.06f,
+        edgeShadeAlpha = distance * 0.28f,
+        edgeShadeStartFromLeft = clampedOffset < 0f,
+        shadowElevationFraction = distance * 0.8f
     )
 }
 
