@@ -431,9 +431,7 @@ fun AppNavigation(
         val bottomBarVisibilityMode = appNavigationSettings.bottomBarVisibilityMode
         val orderedVisibleTabIds = appNavigationSettings.orderedVisibleTabIds
         val visibleBottomBarItems = remember(orderedVisibleTabIds) {
-            orderedVisibleTabIds.mapNotNull { id -> 
-                BottomNavItem.entries.find { it.name == id }
-            }
+            resolveVisibleBottomBarItems(orderedVisibleTabIds)
         }
         val visibleBottomBarRoutes = remember(visibleBottomBarItems) {
             visibleBottomBarItems.map { it.route }.toSet()
@@ -1144,7 +1142,10 @@ fun AppNavigation(
                             HorizontalPager(
                                 modifier = Modifier.fillMaxSize(),
                                 state = bottomPagerState,
-                                beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(),
+                                beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(
+                                    pageCount = visibleBottomBarItems.size,
+                                    contentReady = bottomPagerContentReady
+                                ),
                                 userScrollEnabled = shouldEnableBottomPagerUserScroll()
                             ) { page ->
                                 val slotItem = visibleBottomBarItems.getOrNull(page) ?: BottomNavItem.HOME

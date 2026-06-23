@@ -448,13 +448,41 @@ class AppTopLevelNavigationPolicyTest {
     @Test
     fun bottomPagerNavigationDuration_scalesWithPageDistance() {
         assertEquals(300, resolveBottomPagerNavigationDurationMillis(pageDistance = 1))
-        assertEquals(380, resolveBottomPagerNavigationDurationMillis(pageDistance = 2))
-        assertEquals(540, resolveBottomPagerNavigationDurationMillis(pageDistance = 4))
+        assertEquals(300, resolveBottomPagerNavigationDurationMillis(pageDistance = 2))
+        assertEquals(500, resolveBottomPagerNavigationDurationMillis(pageDistance = 4))
     }
 
     @Test
-    fun bottomPagerPreload_isDisabled() {
-        assertEquals(0, resolveBottomPagerBeyondViewportPageCount())
+    fun bottomPagerPreload_followsVisibleBottomBarCountAfterReady() {
+        assertEquals(0, resolveBottomPagerBeyondViewportPageCount(pageCount = 4, contentReady = false))
+        assertEquals(0, resolveBottomPagerBeyondViewportPageCount(pageCount = 1, contentReady = true))
+        assertEquals(3, resolveBottomPagerBeyondViewportPageCount(pageCount = 4, contentReady = true))
+        assertEquals(4, resolveBottomPagerBeyondViewportPageCount(pageCount = 5, contentReady = true))
+        assertEquals(4, resolveBottomPagerBeyondViewportPageCount(pageCount = 9, contentReady = true))
+    }
+
+    @Test
+    fun bottomPagerVisibleItems_dropInvalidIdsAndClampToFive() {
+        assertEquals(
+            listOf(
+                BottomNavItem.HOME,
+                BottomNavItem.DYNAMIC,
+                BottomNavItem.HISTORY,
+                BottomNavItem.PROFILE,
+                BottomNavItem.FAVORITE
+            ),
+            resolveVisibleBottomBarItems(
+                orderedVisibleTabIds = listOf(
+                    "HOME",
+                    "DYNAMIC",
+                    "INVALID",
+                    "HISTORY",
+                    "PROFILE",
+                    "FAVORITE",
+                    "LIVE"
+                )
+            )
+        )
     }
 
     @Test
@@ -540,7 +568,7 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
-    fun bottomPagerDuringNavigation_composesOnlyCurrentStartAndTargetAfterReady() {
+    fun bottomPagerAfterReady_allowsNonStoryPagesToStayComposed() {
         assertTrue(
             shouldComposeBottomPagerPage(
                 item = BottomNavItem.DYNAMIC,
@@ -552,7 +580,7 @@ class AppTopLevelNavigationPolicyTest {
                 contentReady = true
             )
         )
-        assertFalse(
+        assertTrue(
             shouldComposeBottomPagerPage(
                 item = BottomNavItem.HISTORY,
                 page = 2,
@@ -566,7 +594,7 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
-    fun bottomPagerAfterNavigation_composesSettledPage() {
+    fun bottomPagerAfterReady_keepsNonStoryPagesComposedWhenSettled() {
         assertTrue(
             shouldComposeBottomPagerPage(
                 item = BottomNavItem.PROFILE,
@@ -578,7 +606,7 @@ class AppTopLevelNavigationPolicyTest {
                 contentReady = true
             )
         )
-        assertFalse(
+        assertTrue(
             shouldComposeBottomPagerPage(
                 item = BottomNavItem.HOME,
                 page = 0,

@@ -28,6 +28,7 @@ internal data class BottomPagerRenderBudget(
 )
 
 internal const val BOTTOM_TAB_RENDER_BUDGET_HOLD_MILLIS = 220L
+internal const val BOTTOM_BAR_MAX_VISIBLE_ITEMS = 5
 
 internal fun resolveTopLevelNavigationAction(
     currentRoute: String?,
@@ -92,6 +93,14 @@ internal fun resolveBottomPagerItemForPage(
     return visibleItems.getOrNull(page) ?: BottomNavItem.HOME
 }
 
+internal fun resolveVisibleBottomBarItems(
+    orderedVisibleTabIds: List<String>
+): List<BottomNavItem> {
+    return orderedVisibleTabIds
+        .mapNotNull { id -> BottomNavItem.entries.find { it.name == id } }
+        .take(BOTTOM_BAR_MAX_VISIBLE_ITEMS)
+}
+
 internal fun resolveActiveBottomTabRoute(
     currentKey: BiliPaiNavKey?,
     currentBottomItem: BottomNavItem
@@ -139,11 +148,17 @@ internal fun resolveBottomPagerSaveableStateKey(item: BottomNavItem): String {
 }
 
 internal fun resolveBottomPagerNavigationDurationMillis(pageDistance: Int): Int {
-    val distance = pageDistance.coerceAtLeast(1)
-    return 220 + distance * 80
+    val distance = pageDistance.coerceAtLeast(2)
+    return distance * 100 + 100
 }
 
-internal fun resolveBottomPagerBeyondViewportPageCount(): Int = 0
+internal fun resolveBottomPagerBeyondViewportPageCount(
+    pageCount: Int,
+    contentReady: Boolean
+): Int {
+    if (!contentReady) return 0
+    return pageCount.coerceIn(1, BOTTOM_BAR_MAX_VISIBLE_ITEMS) - 1
+}
 
 internal fun resolveBottomPagerRenderBudget(isNavigating: Boolean): BottomPagerRenderBudget {
     return BottomPagerRenderBudget(
@@ -170,12 +185,7 @@ internal fun shouldComposeBottomPagerPage(
     if (!contentReady) {
         return page == navigationStartPage || page == selectedPage
     }
-    if (isNavigating) {
-        return page == navigationStartPage ||
-            page == currentPage ||
-            page == selectedPage
-    }
-    return page == selectedPage
+    return true
 }
 
 internal fun shouldBypassNavigationDebounceForRoute(targetRoute: String): Boolean {
