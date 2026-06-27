@@ -1250,23 +1250,14 @@ private fun VideoPageItem(
             fillContainer = portraitPagerFillContainer
         ).dp.toPx()
     }
-    val commentExpansionTransform = remember(
-        commentSheetVisibilityProgress,
-        portraitPageWidthPx,
-        portraitPageHeightPx,
-        currentVideoAspect,
-        portraitViewportVerticalOffsetPx,
-        portraitPagerFillContainer
-    ) {
-        resolvePortraitCommentPlayerTransform(
-            commentVisibilityProgress = commentSheetVisibilityProgress,
-            containerWidthPx = portraitPageWidthPx,
-            containerHeightPx = portraitPageHeightPx,
-            currentVideoAspect = currentVideoAspect,
-            viewportVerticalOffsetPx = portraitViewportVerticalOffsetPx,
-            fillContainer = portraitPagerFillContainer
-        )
-    }
+    val commentExpansionTransform = resolvePortraitCommentPlayerTransform(
+        commentVisibilityProgress = commentSheetVisibilityProgress,
+        containerWidthPx = portraitPageWidthPx,
+        containerHeightPx = portraitPageHeightPx,
+        currentVideoAspect = currentVideoAspect,
+        viewportVerticalOffsetPx = portraitViewportVerticalOffsetPx,
+        fillContainer = portraitPagerFillContainer
+    )
 
     LaunchedEffect(isCurrentPage, bvid) {
         if (!isCurrentPage) {
@@ -2248,7 +2239,6 @@ private fun VideoPageItem(
             active = isCurrentPage,
             onDismiss = {
                 showCommentSheet = false
-                commentSheetVisibilityProgress = 0f
             },
             onVisibilityProgressChange = { progress ->
                 commentSheetVisibilityProgress = progress

@@ -44,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -208,12 +209,51 @@ internal fun resolveVideoCommentSheetDragStartOffset(
     return max(renderedOffsetPx, targetOffsetPx).coerceAtLeast(0f)
 }
 
+internal fun resolvePortraitCommentDismissDragTargetOffset(sheetHeightPx: Float): Float {
+    return sheetHeightPx.coerceAtLeast(0f)
+}
+
+internal fun shouldCompletePortraitCommentDismissDragSettling(
+    sheetOffsetPx: Float,
+    sheetHeightPx: Float
+): Boolean {
+    if (sheetHeightPx <= 0f) return true
+    return sheetOffsetPx >= sheetHeightPx * 0.98f
+}
+
+internal fun resolveVideoCommentSheetDragVisibilityProgress(
+    hostContent: VideoCommentSheetHostContent,
+    mainSheetVisible: Boolean,
+    isDismissDragSettling: Boolean,
+    sheetOffsetPx: Float,
+    sheetHeightPx: Float,
+    hostVisibilityProgress: Float
+): Float {
+    return when {
+        (hostContent != VideoCommentSheetHostContent.HIDDEN && mainSheetVisible) ||
+            isDismissDragSettling ->
+            resolvePortraitCommentVisibilityProgress(
+                sheetOffsetPx = sheetOffsetPx,
+                sheetHeightPx = sheetHeightPx
+            )
+        hostContent == VideoCommentSheetHostContent.THREAD_DETAIL -> 1f
+        hostContent == VideoCommentSheetHostContent.HIDDEN && hostVisibilityProgress > 0f ->
+            hostVisibilityProgress.coerceIn(0f, 1f)
+        else -> 0f
+    }
+}
+
 internal fun resolveVideoCommentSheetPresentationProgress(
     hostVisibilityProgress: Float,
-    dragVisibilityProgress: Float
+    dragVisibilityProgress: Float,
+    preferDragProgress: Boolean = false
 ): Float {
-    return hostVisibilityProgress.coerceIn(0f, 1f) *
-        dragVisibilityProgress.coerceIn(0f, 1f)
+    val dragProgress = dragVisibilityProgress.coerceIn(0f, 1f)
+    return if (preferDragProgress) {
+        dragProgress
+    } else {
+        hostVisibilityProgress.coerceIn(0f, 1f) * dragProgress
+    }
 }
 
 internal fun resolveVideoCommentSheetHostOverlayVisual(
@@ -286,6 +326,7 @@ fun VideoCommentSheetHost(
     val motionSpec = remember(uiPreset) { resolveAdaptiveBottomSheetMotionSpec(uiPreset) }
     val appearance = rememberVideoCommentAppearance()
     var isDraggingSheet by remember { mutableStateOf(false) }
+    var isDismissDragSettling by remember { mutableStateOf(false) }
     var sheetDragTargetOffsetPx by remember { mutableStateOf(0f) }
     var mainSheetMeasuredHeightPx by remember { mutableStateOf(0f) }
     val hostVisibilityProgress by animateFloatAsState(
@@ -301,40 +342,50 @@ fun VideoCommentSheetHost(
     )
     val sheetDragOffsetPx by animateFloatAsState(
         targetValue = sheetDragTargetOffsetPx,
-        animationSpec = tween(durationMillis = if (isDraggingSheet) 0 else 180),
+        animationSpec = tween(
+            durationMillis = when {
+                isDraggingSheet -> 0
+                isDismissDragSettling -> motionSpec.contentExitFadeDurationMillis.coerceAtLeast(180)
+                else -> 180
+            }
+        ),
         label = "video_comment_main_sheet_offset"
     )
     val latestSheetDragOffsetPx = rememberUpdatedState(sheetDragOffsetPx)
-    val sheetDragVisibilityProgress = remember(
-        hostContent,
-        mainSheetVisible,
-        sheetDragOffsetPx,
-        hostVisibilityProgress,
-        mainSheetMeasuredHeightPx
-    ) {
-        when {
-            hostContent != VideoCommentSheetHostContent.HIDDEN && mainSheetVisible ->
-                resolvePortraitCommentVisibilityProgress(
-                    sheetOffsetPx = sheetDragOffsetPx,
-                    sheetHeightPx = mainSheetMeasuredHeightPx
-                )
-            hostContent == VideoCommentSheetHostContent.THREAD_DETAIL -> 1f
-            hostContent == VideoCommentSheetHostContent.HIDDEN && hostVisibilityProgress > 0f -> 1f
-            else -> 0f
-        }
-    }
-    val mainSheetVisibilityProgress = remember(
-        hostVisibilityProgress,
-        sheetDragVisibilityProgress
-    ) {
-        resolveVideoCommentSheetPresentationProgress(
-            hostVisibilityProgress = hostVisibilityProgress,
-            dragVisibilityProgress = sheetDragVisibilityProgress
-        )
+    val sheetDragVisibilityProgress = resolveVideoCommentSheetDragVisibilityProgress(
+        hostContent = hostContent,
+        mainSheetVisible = mainSheetVisible,
+        isDismissDragSettling = isDismissDragSettling,
+        sheetOffsetPx = sheetDragOffsetPx,
+        sheetHeightPx = mainSheetMeasuredHeightPx,
+        hostVisibilityProgress = hostVisibilityProgress
+    )
+    val mainSheetVisibilityProgress = resolveVideoCommentSheetPresentationProgress(
+        hostVisibilityProgress = hostVisibilityProgress,
+        dragVisibilityProgress = sheetDragVisibilityProgress,
+        preferDragProgress = isDraggingSheet || isDismissDragSettling
+    )
+
+    SideEffect {
+        onMainSheetVisibilityProgressChange(mainSheetVisibilityProgress)
     }
 
-    LaunchedEffect(mainSheetVisible, hostContent, mainSheetVisibilityProgress) {
-        onMainSheetVisibilityProgressChange(mainSheetVisibilityProgress)
+    LaunchedEffect(isDismissDragSettling, sheetDragOffsetPx, mainSheetMeasuredHeightPx, hostContent) {
+        if (!isDismissDragSettling) return@LaunchedEffect
+        if (
+            shouldCompletePortraitCommentDismissDragSettling(
+                sheetOffsetPx = sheetDragOffsetPx,
+                sheetHeightPx = mainSheetMeasuredHeightPx
+            )
+        ) {
+            isDismissDragSettling = false
+            sheetDragTargetOffsetPx = 0f
+            if (hostContent == VideoCommentSheetHostContent.THREAD_DETAIL) {
+                commentViewModel.closeSubReply()
+            } else {
+                onDismiss()
+            }
+        }
     }
     val overlayVisual = remember(mainSheetVisible, mainSheetVisibilityProgress) {
         resolveVideoCommentSheetHostOverlayVisual(
@@ -344,7 +395,7 @@ fun VideoCommentSheetHost(
     }
 
     LaunchedEffect(hostVisible) {
-        if (!hostVisible) {
+        if (!hostVisible && !isDismissDragSettling) {
             isDraggingSheet = false
             sheetDragTargetOffsetPx = 0f
         }
@@ -548,13 +599,14 @@ fun VideoCommentSheetHost(
                                             sheetHeightPx = mainSheetMeasuredHeightPx
                                         )
                                     ) {
-                                        if (hostContent == VideoCommentSheetHostContent.THREAD_DETAIL) {
-                                            commentViewModel.closeSubReply()
-                                        } else {
-                                            onDismiss()
-                                        }
+                                        isDismissDragSettling = true
+                                        sheetDragTargetOffsetPx =
+                                            resolvePortraitCommentDismissDragTargetOffset(
+                                                sheetHeightPx = mainSheetMeasuredHeightPx
+                                            )
+                                    } else {
+                                        sheetDragTargetOffsetPx = 0f
                                     }
-                                    sheetDragTargetOffsetPx = 0f
                                 },
                                 onDragCancel = {
                                     isDraggingSheet = false

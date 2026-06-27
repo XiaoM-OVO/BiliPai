@@ -315,4 +315,58 @@ class VideoCommentSheetHostPolicyTest {
             )
         )
     }
+
+    @Test
+    fun `sheet presentation progress prefers drag progress while finger or dismiss settling is active`() {
+        assertEquals(
+            0.4f,
+            resolveVideoCommentSheetPresentationProgress(
+                hostVisibilityProgress = 1f,
+                dragVisibilityProgress = 0.4f,
+                preferDragProgress = true
+            )
+        )
+    }
+
+    @Test
+    fun `dismiss drag settling keeps drag visibility until sheet offset reaches bottom`() {
+        assertEquals(
+            0.5f,
+            resolveVideoCommentSheetDragVisibilityProgress(
+                hostContent = VideoCommentSheetHostContent.MAIN_LIST,
+                mainSheetVisible = true,
+                isDismissDragSettling = true,
+                sheetOffsetPx = 300f,
+                sheetHeightPx = 600f,
+                hostVisibilityProgress = 1f
+            )
+        )
+        assertFalse(
+            shouldCompletePortraitCommentDismissDragSettling(
+                sheetOffsetPx = 300f,
+                sheetHeightPx = 600f
+            )
+        )
+        assertTrue(
+            shouldCompletePortraitCommentDismissDragSettling(
+                sheetOffsetPx = 590f,
+                sheetHeightPx = 600f
+            )
+        )
+    }
+
+    @Test
+    fun `host exit visibility follows host fade instead of snapping drag progress to expanded`() {
+        assertEquals(
+            0.4f,
+            resolveVideoCommentSheetDragVisibilityProgress(
+                hostContent = VideoCommentSheetHostContent.HIDDEN,
+                mainSheetVisible = false,
+                isDismissDragSettling = false,
+                sheetOffsetPx = 0f,
+                sheetHeightPx = 600f,
+                hostVisibilityProgress = 0.4f
+            )
+        )
+    }
 }
