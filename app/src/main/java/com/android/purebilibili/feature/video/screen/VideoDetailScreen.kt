@@ -2985,6 +2985,23 @@ fun VideoDetailScreen(
     fun BoxScope.VideoDetailRouteSheetMainContent() {
             // 📐 [平板适配] 全屏模式过渡动画（只有手机横屏才进入全屏）
         if (isFullscreenMode) {
+                val showDanmakuDialog by viewModel.showDanmakuDialog.collectAsStateWithLifecycle()
+                val isSendingDanmaku by viewModel.isSendingDanmaku.collectAsStateWithLifecycle()
+                val composerDrafts by viewModel.composerDrafts.collectAsStateWithLifecycle()
+                val useInlineDanmakuComposer =
+                    com.android.purebilibili.feature.video.ui.components.shouldUseInlineDanmakuComposer(
+                        isFullscreenMode = isFullscreenMode
+                    )
+                val danmakuSendPreferenceScope = rememberCoroutineScope()
+                val rememberedDanmakuSendColor by com.android.purebilibili.core.store.SettingsManager
+                    .getDanmakuSendColor(context)
+                    .collectAsStateWithLifecycle(initialValue = 16777215)
+                val rememberedDanmakuSendMode by com.android.purebilibili.core.store.SettingsManager
+                    .getDanmakuSendMode(context)
+                    .collectAsStateWithLifecycle(initialValue = 1)
+                val rememberedDanmakuSendFontSize by com.android.purebilibili.core.store.SettingsManager
+                    .getDanmakuSendFontSize(context)
+                    .collectAsStateWithLifecycle(initialValue = 25)
                 VideoPlayerSection(
                     playerState = playerState,
                     uiState = uiState,
@@ -2998,6 +3015,25 @@ fun VideoDetailScreen(
                         handleTopBarAction(resolveVideoDetailTopBarAction(isHomeButton = true))
                     },
                     onDanmakuInputClick = { viewModel.showDanmakuSendDialog() },
+                    danmakuComposerVisible = showDanmakuDialog && useInlineDanmakuComposer,
+                    onDismissDanmakuComposer = { viewModel.hideDanmakuSendDialog() },
+                    onSendDanmakuComposer = { message, color, mode, fontSize, encourage ->
+                        viewModel.sendDanmaku(message, color, mode, fontSize, encourage)
+                    },
+                    isSendingDanmakuComposer = isSendingDanmaku,
+                    danmakuComposerInitialText = composerDrafts.danmaku.text,
+                    danmakuComposerInitialAttentionCommand = composerDrafts.danmaku.attentionCommand,
+                    danmakuComposerInitialColor = rememberedDanmakuSendColor,
+                    danmakuComposerInitialMode = rememberedDanmakuSendMode,
+                    danmakuComposerInitialFontSize = rememberedDanmakuSendFontSize,
+                    onDanmakuComposerDraftChange = viewModel::updateDanmakuDraft,
+                    onDanmakuComposerSelectionChange = { color, mode, fontSize ->
+                        danmakuSendPreferenceScope.launch {
+                            com.android.purebilibili.core.store.SettingsManager.setDanmakuSendColor(context, color)
+                            com.android.purebilibili.core.store.SettingsManager.setDanmakuSendMode(context, mode)
+                            com.android.purebilibili.core.store.SettingsManager.setDanmakuSendFontSize(context, fontSize)
+                        }
+                    },
                     // 🔗 [新增] 分享功能
                     bvid = videoPlayerSectionTarget.bvid,
                     coverUrl = videoPlayerSectionTarget.entryCoverUrl,
@@ -4039,8 +4075,12 @@ fun VideoDetailScreen(
             .collectAsStateWithLifecycle(initialValue = 25
         )
         val composerDrafts by viewModel.composerDrafts.collectAsStateWithLifecycle()
+        val useInlineDanmakuComposer =
+            com.android.purebilibili.feature.video.ui.components.shouldUseInlineDanmakuComposer(
+                isFullscreenMode = isFullscreenMode
+            )
         com.android.purebilibili.feature.video.ui.components.DanmakuSendDialog(
-            visible = showDanmakuDialog,
+            visible = showDanmakuDialog && !useInlineDanmakuComposer,
             onDismiss = { viewModel.hideDanmakuSendDialog() },
             onSend = { message, color, mode, fontSize, encourage ->
                 android.util.Log.d("VideoDetailScreen", "📤 Sending danmaku: $message")

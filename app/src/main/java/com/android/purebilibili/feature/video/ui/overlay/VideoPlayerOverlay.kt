@@ -44,6 +44,7 @@ import com.android.purebilibili.feature.video.ui.components.QualitySelectionMenu
 import com.android.purebilibili.feature.video.ui.components.SpeedSelectionMenuDialog
 import com.android.purebilibili.feature.video.ui.components.SpeedSelectionMenuPlacement
 import com.android.purebilibili.feature.video.ui.components.DanmakuSettingsPanel
+import com.android.purebilibili.feature.video.ui.components.LandscapeDanmakuComposer
 import com.android.purebilibili.feature.video.ui.components.VideoAspectRatio
 import com.android.purebilibili.feature.video.ui.components.AspectRatioMenu
 import com.android.purebilibili.feature.video.ui.components.VideoSettingsPanel
@@ -438,6 +439,23 @@ fun VideoPlayerOverlay(
     danmakuEnabled: Boolean = true,
     onDanmakuToggle: () -> Unit = {},
     onDanmakuInputClick: () -> Unit = {},
+    danmakuComposerVisible: Boolean = false,
+    onDismissDanmakuComposer: () -> Unit = {},
+    onSendDanmakuComposer: (
+        message: String,
+        color: Int,
+        mode: Int,
+        fontSize: Int,
+        attentionCommand: Boolean
+    ) -> Unit = { _, _, _, _, _ -> },
+    isSendingDanmakuComposer: Boolean = false,
+    danmakuComposerInitialText: String = "",
+    danmakuComposerInitialAttentionCommand: Boolean = false,
+    danmakuComposerInitialColor: Int = 16777215,
+    danmakuComposerInitialMode: Int = 1,
+    danmakuComposerInitialFontSize: Int = 25,
+    onDanmakuComposerDraftChange: (String, Boolean) -> Unit = { _, _ -> },
+    onDanmakuComposerSelectionChange: (Int, Int, Int) -> Unit = { _, _, _ -> },
     danmakuOpacity: Float = 0.85f,
     danmakuFontScale: Float = 1.0f,
     danmakuFontWeight: Int = 5,
@@ -1184,8 +1202,9 @@ fun VideoPlayerOverlay(
         }
 
         // --- 3. 控制栏内容 (锁定时隐藏) ---
+        val showPlayerChrome = (isVisible && !isScreenLocked) || danmakuComposerVisible
         AnimatedVisibility(
-            visible = isVisible && !isScreenLocked,  // 🔒 锁定时隐藏控制栏
+            visible = showPlayerChrome,
             enter = fadeIn(tween(300)),
             exit = fadeOut(tween(300)),
             //  [修复] 确保 AnimatedVisibility 填充整个父容器
@@ -1247,8 +1266,26 @@ fun VideoPlayerOverlay(
                     )
                 }
                 
-                //  [修复] 底部控制栏 - 固定在底部
-                BottomControlBar(
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    if (isFullscreen && danmakuComposerVisible) {
+                        LandscapeDanmakuComposer(
+                            visible = true,
+                            onDismiss = onDismissDanmakuComposer,
+                            onSend = onSendDanmakuComposer,
+                            isSending = isSendingDanmakuComposer,
+                            initialColor = danmakuComposerInitialColor,
+                            initialMode = danmakuComposerInitialMode,
+                            initialFontSize = danmakuComposerInitialFontSize,
+                            initialText = danmakuComposerInitialText,
+                            initialAttentionCommand = danmakuComposerInitialAttentionCommand,
+                            onDraftChange = onDanmakuComposerDraftChange,
+                            onSelectionChange = onDanmakuComposerSelectionChange
+                        )
+                    }
+
+                    BottomControlBar(
                     isPlaying = effectiveIsPlaying,
                     progress = displayedProgressState,
                     isFullscreen = isFullscreen,
@@ -1289,6 +1326,7 @@ fun VideoPlayerOverlay(
                     onDanmakuToggle = onDanmakuToggle,
                     onDanmakuInputClick = onDanmakuInputClick,
                     onDanmakuSettingsClick = { showDanmakuSettings = true },
+                    isLoggedIn = isLoggedIn,
                     subtitleControlState = subtitleControlState,
                     subtitleControlCallbacks = subtitleControlCallbacks,
                     currentQualityLabel = currentQualityLabel,
@@ -1314,10 +1352,9 @@ fun VideoPlayerOverlay(
                         compact = !isFullscreen
                     ),
                     onPlaybackOrderClick = { showPlaybackOrderSheet = true },
-                    progressPlacement = progressPlacement,
-                    //  [修复] 传入 modifier 确保在底部
-                    modifier = Modifier.align(Alignment.BottomStart)
+                    progressPlacement = progressPlacement
                 )
+                }
             }
         }
         

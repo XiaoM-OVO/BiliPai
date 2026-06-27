@@ -3495,9 +3495,20 @@ class PlayerViewModel : ViewModel() {
     private val _isSendingDanmaku = MutableStateFlow(false)
     val isSendingDanmaku = _isSendingDanmaku.asStateFlow()
     
-    fun showDanmakuSendDialog() {
+    fun showDanmakuSendDialog(): Boolean {
+        val current = _uiState.value as? PlayerUiState.Success
+        if (current?.isLoggedIn != true) {
+            viewModelScope.launch {
+                toast(
+                    com.android.purebilibili.feature.video.ui.components
+                        .resolveDanmakuComposerLoginBlockedMessage()
+                )
+            }
+            return false
+        }
         ensureComposerDraftVideo()
         _showDanmakuDialog.value = true
+        return true
     }
     
     fun hideDanmakuSendDialog() {

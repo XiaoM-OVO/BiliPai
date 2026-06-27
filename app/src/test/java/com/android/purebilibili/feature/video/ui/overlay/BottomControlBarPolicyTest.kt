@@ -120,10 +120,16 @@ class BottomControlBarPolicyTest {
                 widthDp = 393
             )
         )
+        assertFalse(
+            shouldShowDanmakuInputInControlBar(
+                isFullscreen = true,
+                widthDp = 479
+            )
+        )
         assertTrue(
             shouldShowDanmakuInputInControlBar(
                 isFullscreen = true,
-                widthDp = 720
+                widthDp = 480
             )
         )
     }

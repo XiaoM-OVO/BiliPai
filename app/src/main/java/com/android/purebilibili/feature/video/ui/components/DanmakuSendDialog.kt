@@ -54,8 +54,6 @@ internal data class DanmakuSendSelectionState(
     val fontSize: Int
 )
 
-internal const val DANMAKU_SEND_VIP_GRADUAL_COLOR = -1
-
 internal fun resolveDanmakuSendDialogLayoutPolicy(): DanmakuSendDialogLayoutPolicy {
     return DanmakuSendDialogLayoutPolicy(
         fillMaxWidthFraction = 1f,
@@ -125,32 +123,9 @@ fun DanmakuSendDialog(
         )
     }
 
-    // 弹幕预设颜色 (十进制 RGB)
-    val colorOptions = listOf(
-        16777215 to "白色",  // 0xFFFFFF
-        16646914 to "红色",  // 0xFE0302
-        16740868 to "橙色",  // 0xFF7204
-        16755202 to "金色",  // 0xFFAA02
-        52224 to "绿色",     // 0x00CD00
-        41430 to "蓝色",     // 0x00A1D6
-        13369971 to "紫色",  // 0xCC0273
-        2236962 to "黑色",   // 0x222222
-        DANMAKU_SEND_VIP_GRADUAL_COLOR to "会员渐变"
-    )
-
-    // 弹幕位置模式
-    val modeOptions = listOf(
-        1 to "滚动",
-        5 to "顶部",
-        4 to "底部"
-    )
-
-    // 弹幕字号
-    val fontSizeOptions = listOf(
-        18 to "小",
-        25 to "中",
-        36 to "大"
-    )
+    val colorOptions = remember { danmakuSendColorOptions().map { it.value to it.label } }
+    val modeOptions = remember { danmakuSendModeOptions().map { it.value to it.label } }
+    val fontSizeOptions = remember { danmakuSendFontSizeOptions().map { it.value to it.label } }
 
     // 状态
     var text by remember { mutableStateOf(initialText) }

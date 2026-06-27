@@ -220,7 +220,10 @@ internal fun shouldShowEpisodeInMoreActions(
 internal fun shouldShowDanmakuInputInControlBar(
     isFullscreen: Boolean,
     widthDp: Int
-): Boolean = isFullscreen && widthDp >= 600
+): Boolean = com.android.purebilibili.feature.video.ui.components.shouldShowDanmakuInputInControlBar(
+    isFullscreen = isFullscreen,
+    widthDp = widthDp
+)
 
 internal fun shouldShowPlaybackOrderLabelInControlBar(
     isFullscreen: Boolean,
@@ -355,6 +358,7 @@ fun BottomControlBar(
     onDanmakuToggle: () -> Unit = {},
     onDanmakuInputClick: () -> Unit = {},
     onDanmakuSettingsClick: () -> Unit = {},
+    isLoggedIn: Boolean = true,
     subtitleControlState: SubtitleControlUiState = SubtitleControlUiState(),
     subtitleControlCallbacks: SubtitleControlCallbacks = SubtitleControlCallbacks(),
     
@@ -470,6 +474,15 @@ fun BottomControlBar(
             isFullscreen = isFullscreen,
             widthDp = configuration.screenWidthDp
         )
+    }
+    val showCompactDanmakuSend = remember(isFullscreen, configuration.screenWidthDp) {
+        com.android.purebilibili.feature.video.ui.components.shouldShowCompactDanmakuSendAction(
+            isFullscreen = isFullscreen,
+            widthDp = configuration.screenWidthDp
+        )
+    }
+    val danmakuInputPlaceholder = remember(isLoggedIn) {
+        com.android.purebilibili.feature.video.ui.components.resolveDanmakuInputPlaceholder(isLoggedIn)
     }
     var showMoreActionsPanel by remember { mutableStateOf(false) }
     var showSubtitlePanel by remember { mutableStateOf(false) }
@@ -664,41 +677,47 @@ fun BottomControlBar(
                 if (showDanmakuInput) {
                     Spacer(modifier = Modifier.width(layoutPolicy.danmakuSwitchToInputSpacingDp.dp))
 
-                    // Danmaku Input Box
-                    Box(
+                    Row(
                         modifier = Modifier
                             .weight(1f)
                             .height(layoutPolicy.danmakuInputHeightDp.dp)
                             .clip(RoundedCornerShape((layoutPolicy.danmakuInputHeightDp / 2).dp))
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .consumeTap(onDanmakuInputClick),
-                        contentAlignment = Alignment.CenterStart
+                            .background(Color.White.copy(alpha = if (isLoggedIn) 0.2f else 0.12f)),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "发个友善的弹幕见证当下...",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = layoutPolicy.danmakuInputFontSp.sp,
-                            maxLines = danmakuPlaceholderPolicy.maxLines,
-                            overflow = if (danmakuPlaceholderPolicy.ellipsis) TextOverflow.Ellipsis else TextOverflow.Clip,
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .consumeTap(onDanmakuInputClick),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(
+                                text = danmakuInputPlaceholder,
+                                color = Color.White.copy(alpha = if (isLoggedIn) 0.7f else 0.5f),
+                                fontSize = layoutPolicy.danmakuInputFontSp.sp,
+                                maxLines = danmakuPlaceholderPolicy.maxLines,
+                                overflow = if (danmakuPlaceholderPolicy.ellipsis) {
+                                    TextOverflow.Ellipsis
+                                } else {
+                                    TextOverflow.Clip
+                                },
+                                modifier = Modifier.padding(
                                     start = layoutPolicy.danmakuInputStartPaddingDp.dp,
-                                    end = danmakuPlaceholderPolicy.trailingTextPaddingDp.dp
+                                    end = 8.dp
                                 )
-                        )
+                            )
+                        }
 
-                        // Settings Icon inside input bar (right)
                         IconButton(
                             onClick = onDanmakuSettingsClick,
                             modifier = Modifier
-                                .align(Alignment.CenterEnd)
                                 .padding(end = layoutPolicy.danmakuSettingEndPaddingDp.dp)
                                 .size(layoutPolicy.danmakuSettingButtonSizeDp.dp)
                         ) {
                             Icon(
                                 imageVector = CupertinoIcons.Default.Gearshape,
-                                contentDescription = "Settings",
+                                contentDescription = "弹幕显示设置",
                                 tint = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.size(layoutPolicy.danmakuSettingIconSizeDp.dp)
                             )
@@ -706,6 +725,21 @@ fun BottomControlBar(
                     }
 
                     Spacer(modifier = Modifier.width(layoutPolicy.afterInputSpacingDp.dp))
+                } else if (showCompactDanmakuSend) {
+                    Spacer(modifier = Modifier.width(layoutPolicy.danmakuSwitchToInputSpacingDp.dp))
+                    Text(
+                        text = if (isLoggedIn) "发弹幕" else "登录发弹幕",
+                        color = Color.White.copy(alpha = if (isLoggedIn) 0.92f else 0.62f),
+                        fontSize = layoutPolicy.actionTextFontSp.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.16f))
+                            .clickable(onClick = onDanmakuInputClick)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.width(layoutPolicy.afterInputSpacingDp.dp))
+                    Spacer(modifier = Modifier.weight(1f))
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -1004,6 +1038,21 @@ fun BottomControlBar(
                             onClick = {
                                 showMoreActionsPanel = false
                                 onPortraitFullscreen()
+                            }
+                        )
+                    }
+                    if (
+                        com.android.purebilibili.feature.video.ui.components.shouldShowDanmakuSendInMoreActions(
+                            isFullscreen = isFullscreen,
+                            showInlineDanmakuInput = showDanmakuInput
+                        )
+                    ) {
+                        MoreActionTextButton(
+                            label = if (isLoggedIn) "发弹幕" else "登录发弹幕",
+                            minWidthDp = moreActionItemMinWidthDp,
+                            onClick = {
+                                showMoreActionsPanel = false
+                                onDanmakuInputClick()
                             }
                         )
                     }
