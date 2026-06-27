@@ -244,6 +244,17 @@ internal fun resolveMainActivityVideoRoute(
     )
 }
 
+internal fun resolveMiniPlayerExpandVideoRoute(
+    bvid: String,
+    cid: Long
+): String {
+    return resolveMainActivityVideoRoute(
+        bvid = bvid,
+        cid = cid,
+        startFullscreen = true
+    )
+}
+
 internal fun resolveMainActivityDynamicRoute(dynamicId: String): String {
     val encodedDynamicId = URLEncoder.encode(dynamicId, StandardCharsets.UTF_8.toString())
     return "dynamic_detail/$encodedDynamicId"
@@ -1367,7 +1378,7 @@ open class MainActivity : AppCompatActivity() {
                                         miniPlayerManager.isNavigatingToVideo = true
                                         miniPlayerManager.exitMiniMode(animate = false)
                                         val cid = miniPlayerManager.currentCid
-                                        pendingNavigationRoute = resolveMainActivityVideoRoute(bvid = bvid, cid = cid)
+                                        pendingNavigationRoute = resolveMiniPlayerExpandVideoRoute(bvid = bvid, cid = cid)
                                     }
                                 }
                             }

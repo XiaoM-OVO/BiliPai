@@ -32,4 +32,12 @@ class MainActivityVideoRoutePolicyTest {
             )
         )
     }
+
+    @Test
+    fun miniPlayerExpandRoute_requestsFullscreenPlayback() {
+        assertEquals(
+            "video/BVmini?cid=88&cover=&startAudio=false&autoPortrait=true&fullscreen=true&resumePositionMs=0&commentRootRpid=0&commentTargetRpid=0",
+            resolveMiniPlayerExpandVideoRoute(bvid = "BVmini", cid = 88L)
+        )
+    }
 }
