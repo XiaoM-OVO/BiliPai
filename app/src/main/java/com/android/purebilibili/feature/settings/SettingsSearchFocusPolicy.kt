@@ -86,10 +86,10 @@ internal fun resolvePlaybackSettingsScrollIndex(
         SettingsSearchFocusIds.PLAYBACK_MINI_PLAYER -> 4
         SettingsSearchFocusIds.PLAYBACK_GESTURE -> 6
         SettingsSearchFocusIds.PLAYBACK_DEBUG -> 8
-        SettingsSearchFocusIds.PLAYBACK_INTERACTION -> 10
-        SettingsSearchFocusIds.PLAYBACK_FULLSCREEN -> 12
-        SettingsSearchFocusIds.PLAYBACK_NETWORK -> 14
-        SettingsSearchFocusIds.PLAYBACK_DATA_SAVER -> 16
+        SettingsSearchFocusIds.PLAYBACK_NETWORK -> 10
+        SettingsSearchFocusIds.PLAYBACK_DATA_SAVER -> 12
+        SettingsSearchFocusIds.PLAYBACK_INTERACTION -> 14
+        SettingsSearchFocusIds.PLAYBACK_FULLSCREEN -> 16
         else -> null
     }
 }

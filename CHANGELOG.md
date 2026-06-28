@@ -1,5 +1,44 @@
 # Changelog
 
+## v9.7.1 (2026-06-29)
+
+### 版本信息
+- 版本号从 `9.7.0` 升级到 `9.7.1`，`versionCode` 从 `242` 升级到 `243`。
+
+### 更新内容
+
+#### 搜索聚焦索引修复
+- **修复设置页搜索跳转错位**：`PlaybackSettingsScreen` 中「网络与画质」「省流量」「互动与评论」「全屏与手势」四个 section 的聚焦索引（10/12/14/16）与实际 LazyColumn item 排列顺序脱节，导致点击「播放与画质」跳转到「互动与评论」、点击「互动与评论」跳转到「网络与画质」。已按实际渲染顺序修正映射，并更新测试覆盖。
+
+#### AndroidX Navigation Event 适配
+- **新增 `navigationevent-compose` 适配模块**：在 `androidx.navigationevent.compose` 包下实现 `NavigationEventHandler`（事件处理器，424 行核心实现）、`NavigationEventState`（事件状态管理）、`RememberNavigationEventDispatcherOwner`（调度器所有者组合记忆）、`LocalNavigationEventDispatcherOwner`（局部提供）、`RememberNavigationEventState`（组合状态记忆），为导航事件驱动提供基础能力。
+
+#### 预测返回手势完善
+- **AOSP 跨 Activity 预测返回**：`BiliPaiAospCrossActivityPredictiveBackAnimation` 策略增强。
+- **预测返回策略层**：`BiliPaiPredictiveBackAnimationPolicy` 逻辑完善。
+- **缩放预测返回**：`BiliPaiScalePredictiveBackAnimation` 实现补充。
+- **共享元素预测返回**：`BiliPaiSharedElementPredictiveBackAnimation` 动画改进。
+
+#### 导航架构调整
+- **`BiliPaiNavDisplayHost`**：显示宿主逻辑重构。
+- **`MainHostTabBackHandler`**：Tab 返回处理增强。
+- **构建排除规则**：`build.gradle.kts` 中新增 `androidx.navigationevent` 依赖排除，避免编译冲突。
+
+#### 首页刷新策略
+- **`HomePullRefreshUiPolicy`**：刷新逻辑微调，同步更新单元测试。
+
+#### 视频详情页
+- **`VideoDetailReturnCoverPolicy`**：新增返回封面策略，含单元测试覆盖。
+
+#### UI 调整
+- **个人页**：按钮与标签留白修复。（`093cd317`）
+- **首页顶部标签**：左侧间距调整。（`7eafaf7f`）
+
+#### 致谢
+- 在致谢页面中加入 PR 贡献者列表。（`f8f71c5d`）
+
+---
+
 ## v9.7.0 (2026-06-28)
 
 ### 版本信息
