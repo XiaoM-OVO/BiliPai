@@ -739,7 +739,13 @@ private fun LightweightHomeTopTabs(
         renderer
     }
     val safeSelectedIndex = selectedIndex.coerceIn(0, (categories.size - 1).coerceAtLeast(0))
-    val topTabDragMotionSpec = remember { resolveSegmentedControlMotionSpec() }
+    val topTabDragMotionSpec = remember(isLiquidGlassEnabled) {
+        if (isLiquidGlassEnabled) {
+            resolveBottomBarMotionSpec(profile = BottomBarMotionProfile.ANDROID_NATIVE_FLOATING)
+        } else {
+            resolveSegmentedControlMotionSpec()
+        }
+    }
     var topTabIndicatorDragEngaged by remember { mutableStateOf(false) }
     val topTabDragState = rememberDampedDragAnimationState(
         initialIndex = safeSelectedIndex,
@@ -1218,9 +1224,8 @@ private fun LightweightHomeTopTabs(
                         backdrop = null,
                         indicatorLensSpec = topTabIndicatorLensSpec,
                         effectivePressProgress = topTabPressProgress,
-                        indicatorIdleSurfaceColor = resolveIosTopTabCapsuleContainerColor(
-                            isDarkTheme = isDarkTheme,
-                            selectionFraction = 1f
+                        indicatorIdleSurfaceColor = resolveBottomBarIdleIndicatorSurfaceColor(
+                            darkTheme = isDarkTheme
                         ),
                         glassEnabled = shouldUseLiquidGlassIndicator,
                         indicatorEffectsEnabled = shouldUseLiquidGlassIndicator,
@@ -1252,9 +1257,8 @@ private fun LightweightHomeTopTabs(
                         backdrop = null,
                         indicatorLensSpec = topTabIndicatorLensSpec,
                         effectivePressProgress = topTabPressProgress,
-                        indicatorIdleSurfaceColor = resolveIosTopTabCapsuleContainerColor(
-                            isDarkTheme = isDarkTheme,
-                            selectionFraction = 1f
+                        indicatorIdleSurfaceColor = resolveBottomBarIdleIndicatorSurfaceColor(
+                            darkTheme = isDarkTheme
                         ),
                         glassEnabled = true,
                         motionProgress = topTabMotionProgress,
@@ -1286,9 +1290,8 @@ private fun LightweightHomeTopTabs(
                         backdrop = null,
                         indicatorLensSpec = topTabIndicatorLensSpec,
                         effectivePressProgress = topTabPressProgress,
-                        indicatorIdleSurfaceColor = resolveIosTopTabCapsuleContainerColor(
-                            isDarkTheme = isDarkTheme,
-                            selectionFraction = 1f
+                        indicatorIdleSurfaceColor = resolveBottomBarIdleIndicatorSurfaceColor(
+                            darkTheme = isDarkTheme
                         ),
                         glassEnabled = true,
                         motionProgress = topTabMotionProgress,

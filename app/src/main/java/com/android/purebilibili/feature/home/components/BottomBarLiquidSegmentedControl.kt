@@ -108,7 +108,8 @@ internal fun resolveSegmentedControlChromeStyle(
     androidNativeLiquidGlassEnabled: Boolean,
     preferInlineContentStyle: Boolean = false
 ): SegmentedControlChromeStyle {
-    return if (uiPreset == UiPreset.MD3 && (preferInlineContentStyle || !androidNativeLiquidGlassEnabled)) {
+    val preferUnderline = preferInlineContentStyle && !androidNativeLiquidGlassEnabled
+    return if (uiPreset == UiPreset.MD3 && (preferUnderline || !androidNativeLiquidGlassEnabled)) {
         SegmentedControlChromeStyle.ANDROID_NATIVE_UNDERLINE
     } else {
         SegmentedControlChromeStyle.LIQUID_PILL
@@ -432,7 +433,13 @@ fun BottomBarLiquidSegmentedControl(
     val density = LocalDensity.current
     val itemCount = items.size
     val safeSelectedIndex = selectedIndex.coerceIn(0, itemCount - 1)
-    val motionSpec = remember { resolveSegmentedControlMotionSpec() }
+    val motionSpec = remember(effectiveAndroidNativeLiquidGlassEnabled) {
+        if (effectiveAndroidNativeLiquidGlassEnabled) {
+            resolveBottomBarMotionSpec(profile = BottomBarMotionProfile.ANDROID_NATIVE_FLOATING)
+        } else {
+            resolveSegmentedControlMotionSpec()
+        }
+    }
     val clickPulseKey = remember { mutableIntStateOf(0) }
     val dragState = rememberDampedDragAnimationState(
         initialIndex = safeSelectedIndex,
@@ -673,7 +680,7 @@ fun BottomBarLiquidSegmentedControl(
             indicatorLensSpec = indicatorLensSpec,
             effectivePressProgress = tapPressProgress,
             indicatorIdleSurfaceColor = indicatorIdleSurfaceColorOverride
-                ?: if (isDarkTheme) Color.White.copy(0.1f) else Color.Black.copy(0.1f),
+                ?: resolveBottomBarIdleIndicatorSurfaceColor(darkTheme = isDarkTheme),
             glassEnabled = liquidGlassEnabled,
             motionProgress = motionProgress,
             velocityItemsPerSecond = dragState.deformationVelocityItemsPerSecond,
