@@ -245,6 +245,22 @@ class AdaptiveListComponentPolicyTest {
     }
 
     @Test
+    fun `miuix generic search bar does not auto expand before user interaction`() {
+        val source = java.io.File("app/src/main/java/com/android/purebilibili/core/ui/components/iOSListComponents.kt")
+            .takeIf { it.exists() }
+            ?: java.io.File("src/main/java/com/android/purebilibili/core/ui/components/iOSListComponents.kt")
+        val text = source.readText()
+        val miuixSearchBarStart = text.indexOf("private fun MiuixAdaptiveSearchBar")
+        assertTrue(miuixSearchBarStart >= 0)
+        val miuixSearchBarEnd = text.indexOf("\n}", miuixSearchBarStart).let { if (it < 0) text.length else it + 2 }
+        val miuixSearchBarBlock = text.substring(miuixSearchBarStart, miuixSearchBarEnd)
+
+        assertTrue(miuixSearchBarBlock.contains("var expanded by rememberSaveable(query.isNotBlank())"))
+        assertTrue(miuixSearchBarBlock.contains("expanded = expanded || query.isNotBlank()"))
+        assertFalse(miuixSearchBarBlock.contains("expanded = true"))
+    }
+
+    @Test
     fun `ios preset should preserve provided fallback colors for grouped settings and search`() {
         val colorScheme = lightColorScheme()
         val fallbackGroupColor = Color(0xFF101010)

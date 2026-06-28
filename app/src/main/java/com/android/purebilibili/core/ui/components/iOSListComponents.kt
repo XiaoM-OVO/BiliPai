@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1325,12 +1326,15 @@ private fun MiuixAdaptiveSearchBar(
     @Suppress("UNUSED_PARAMETER") containerColor: Color,
     height: androidx.compose.ui.unit.Dp
 ) {
+    var expanded by rememberSaveable(query.isNotBlank()) {
+        mutableStateOf(query.isNotBlank())
+    }
     InputField(
         query = query,
         onQueryChange = onQueryChange,
         onSearch = {},
-        expanded = true,
-        onExpandedChange = {},
+        expanded = expanded || query.isNotBlank(),
+        onExpandedChange = { expanded = it },
         modifier = modifier
             .fillMaxWidth()
             .height(height),

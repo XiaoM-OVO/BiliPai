@@ -659,6 +659,32 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
+    fun settingsBottomPagerPage_skipsOffscreenPreloadEvenAfterContentReady() {
+        assertFalse(
+            shouldComposeBottomPagerPage(
+                item = BottomNavItem.SETTINGS,
+                page = 4,
+                currentPage = 0,
+                selectedPage = 0,
+                isNavigating = false,
+                navigationStartPage = 0,
+                contentReady = true
+            )
+        )
+        assertTrue(
+            shouldComposeBottomPagerPage(
+                item = BottomNavItem.SETTINGS,
+                page = 4,
+                currentPage = 4,
+                selectedPage = 0,
+                isNavigating = false,
+                navigationStartPage = 4,
+                contentReady = false
+            )
+        )
+    }
+
+    @Test
     fun appNavigationUsesMainBottomPagerStateForRenderBudget() {
         val sourceFile = listOf(
             File("app/src/main/java/com/android/purebilibili/navigation/AppNavigation.kt"),

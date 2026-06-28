@@ -179,7 +179,7 @@ internal fun shouldComposeBottomPagerPage(
     navigationStartPage: Int,
     contentReady: Boolean
 ): Boolean {
-    if (item == BottomNavItem.STORY) {
+    if (item == BottomNavItem.STORY || item == BottomNavItem.SETTINGS) {
         return page == currentPage || page == selectedPage
     }
     if (!contentReady) {
