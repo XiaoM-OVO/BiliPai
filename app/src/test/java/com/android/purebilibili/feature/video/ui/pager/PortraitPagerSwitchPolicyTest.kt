@@ -164,6 +164,18 @@ class PortraitPagerSwitchPolicyTest {
     }
 
     @Test
+    fun portraitTemporaryLongPressSpeed_doesNotRouteThroughDetailViewModel() {
+        val source = java.io.File("src/main/java/com/android/purebilibili/feature/video/ui/pager/PortraitVideoPager.kt")
+            .readText()
+        val longPressBlock = source
+            .substringAfter("fun applyPortraitTemporaryPlaybackParameters")
+            .substringBefore("// 进度调整手势")
+
+        assertFalse(longPressBlock.contains("viewModel.applyPlaybackSpeedFromUi"))
+        assertTrue(longPressBlock.contains("exoPlayer.playbackParameters = parameters"))
+    }
+
+    @Test
     fun shouldApplyLoadResult_acceptsOnlyLatestGenerationForSameVideo() {
         assertTrue(
             shouldApplyLoadResult(

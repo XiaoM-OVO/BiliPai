@@ -1530,6 +1530,11 @@ private fun VideoPageItem(
         panY = 0f
     }
 
+    fun applyPortraitTemporaryPlaybackParameters(parameters: PlaybackParameters) {
+        // 竖屏长按只是临时倍速，不走详情页 ViewModel，避免用入口视频状态触发音频流重建。
+        exoPlayer.playbackParameters = parameters
+    }
+
     LaunchedEffect(isCurrentPage) {
         if (!isCurrentPage) {
             resetViewportTransform()
@@ -1538,11 +1543,7 @@ private fun VideoPageItem(
 
     LaunchedEffect(isCurrentPage, isLongPressing, longPressOriginPlaybackParameters) {
         if (shouldRestorePortraitLongPressSpeed(isLongPressing = isLongPressing, isCurrentPage = isCurrentPage)) {
-            val restoreSpeed = longPressOriginPlaybackParameters.speed
-            val handledByViewModel = viewModel.applyPlaybackSpeedFromUi(restoreSpeed)
-            if (!handledByViewModel || exoPlayer.playbackParameters.speed != restoreSpeed) {
-                exoPlayer.playbackParameters = longPressOriginPlaybackParameters
-            }
+            applyPortraitTemporaryPlaybackParameters(longPressOriginPlaybackParameters)
             isLongPressing = false
             showLongPressSpeedFeedback = false
         }
@@ -1553,11 +1554,7 @@ private fun VideoPageItem(
     DisposableEffect(exoPlayer) {
         onDispose {
             if (latestIsLongPressing) {
-                val restoreSpeed = latestLongPressOriginPlaybackParameters.speed
-                val handledByViewModel = viewModel.applyPlaybackSpeedFromUi(restoreSpeed)
-                if (!handledByViewModel || exoPlayer.playbackParameters.speed != restoreSpeed) {
-                    exoPlayer.playbackParameters = latestLongPressOriginPlaybackParameters
-                }
+                exoPlayer.playbackParameters = latestLongPressOriginPlaybackParameters
             }
         }
     }
@@ -1595,11 +1592,7 @@ private fun VideoPageItem(
                         observedMultiTouch = true
 
                         if (isLongPressing) {
-                            val restoreSpeed = longPressOriginPlaybackParameters.speed
-                            val handledByViewModel = viewModel.applyPlaybackSpeedFromUi(restoreSpeed)
-                            if (!handledByViewModel || exoPlayer.playbackParameters.speed != restoreSpeed) {
-                                exoPlayer.playbackParameters = longPressOriginPlaybackParameters
-                            }
+                            applyPortraitTemporaryPlaybackParameters(longPressOriginPlaybackParameters)
                             isLongPressing = false
                             showLongPressSpeedFeedback = false
                         }
@@ -1675,21 +1668,14 @@ private fun VideoPageItem(
                             currentAudioQuality = currentAudioQuality
                         )
                         effectiveLongPressSpeed = longPressPlaybackParameters.speed
-                        val handledByViewModel = viewModel.applyPlaybackSpeedFromUi(effectiveLongPressSpeed)
-                        if (!handledByViewModel || exoPlayer.playbackParameters.speed != effectiveLongPressSpeed) {
-                            exoPlayer.playbackParameters = longPressPlaybackParameters
-                        }
+                        applyPortraitTemporaryPlaybackParameters(longPressPlaybackParameters)
                         isLongPressing = true
                         showLongPressSpeedFeedback = true
                     },
                     onPress = {
                         tryAwaitRelease()
                         if (isLongPressing) {
-                            val restoreSpeed = longPressOriginPlaybackParameters.speed
-                            val handledByViewModel = viewModel.applyPlaybackSpeedFromUi(restoreSpeed)
-                            if (!handledByViewModel || exoPlayer.playbackParameters.speed != restoreSpeed) {
-                                exoPlayer.playbackParameters = longPressOriginPlaybackParameters
-                            }
+                            applyPortraitTemporaryPlaybackParameters(longPressOriginPlaybackParameters)
                             isLongPressing = false
                             showLongPressSpeedFeedback = false
                         }
