@@ -98,4 +98,25 @@ class BiliPaiJsPluginPolicyTest {
         assertFalse(item.isPlayable)
         assertEquals(emptyList(), resolveBiliPaiJsMediaStreams(item))
     }
+
+    @Test
+    fun mediaItemResolvesImageCandidatesAndDistinguishesMissingIcon() {
+        val item = BiliPaiJsMediaItem(
+            id = "logo",
+            title = "台标",
+            coverUrl = "https://example.com/a.png",
+            backdropUrl = "https://example.com/b.png",
+            coverUrls = listOf("https://example.com/a.png", "https://example.com/c.png")
+        )
+
+        assertEquals(
+            listOf(
+                "https://example.com/a.png",
+                "https://example.com/c.png",
+                "https://example.com/b.png"
+            ),
+            resolveBiliPaiJsMediaImageCandidates(item)
+        )
+        assertTrue(BiliPaiJsMediaItem(id = "no-logo", title = "无台标").hasNoImageCandidate)
+    }
 }

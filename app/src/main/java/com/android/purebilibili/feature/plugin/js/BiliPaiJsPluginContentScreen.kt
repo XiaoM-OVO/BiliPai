@@ -50,6 +50,7 @@ import com.android.purebilibili.core.plugin.js.BiliPaiJsRuntime
 import com.android.purebilibili.core.plugin.js.ExternalMediaLaunchStore
 import com.android.purebilibili.core.plugin.js.InstalledBiliPaiJsPlugin
 import com.android.purebilibili.core.plugin.js.isPlayable
+import com.android.purebilibili.core.plugin.js.resolveBiliPaiJsMediaImageCandidates
 import com.android.purebilibili.core.plugin.js.resolveBiliPaiJsMediaStreams
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import kotlinx.coroutines.launch
@@ -261,8 +262,14 @@ private fun BiliPaiJsMediaItemRow(
     onPlay: () -> Unit
 ) {
     val streams = remember(item) { resolveBiliPaiJsMediaStreams(item) }
-    val imageUrl = item.coverUrl ?: item.backdropUrl
-    var imageLoadFailed by remember(imageUrl) { mutableStateOf(false) }
+    val imageCandidates = remember(item) { resolveBiliPaiJsMediaImageCandidates(item) }
+    var imageCandidateIndex by remember(imageCandidates) { mutableStateOf(0) }
+    val imageUrl = imageCandidates.getOrNull(imageCandidateIndex)
+    val imageState = when {
+        imageCandidates.isEmpty() -> PluginMediaImageState.NO_IMAGE
+        imageUrl == null -> PluginMediaImageState.LOAD_FAILED
+        else -> PluginMediaImageState.LOADING
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -275,15 +282,17 @@ private fun BiliPaiJsMediaItemRow(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (imageUrl.isNullOrBlank() || imageLoadFailed) {
+            if (imageUrl.isNullOrBlank()) {
                 PluginMediaImagePlaceholder(
                     title = item.title,
+                    state = imageState,
                     modifier = Modifier.size(width = 96.dp, height = 56.dp)
                 )
             } else {
                 Box(modifier = Modifier.size(width = 96.dp, height = 56.dp)) {
                     PluginMediaImagePlaceholder(
                         title = item.title,
+                        state = PluginMediaImageState.LOADING,
                         modifier = Modifier.fillMaxSize()
                     )
                     AsyncImage(
@@ -293,7 +302,9 @@ private fun BiliPaiJsMediaItemRow(
                             .fillMaxSize()
                             .clip(RoundedCornerShape(6.dp)),
                         contentScale = ContentScale.Crop,
-                        onError = { imageLoadFailed = true }
+                        onError = {
+                            imageCandidateIndex += 1
+                        }
                     )
                 }
             }
@@ -335,12 +346,13 @@ private fun BiliPaiJsMediaItemRow(
 
 @Composable
 private fun PluginMediaImagePlaceholder(title: String) {
-    PluginMediaImagePlaceholder(title = title, modifier = Modifier)
+    PluginMediaImagePlaceholder(title = title, state = PluginMediaImageState.LOADING, modifier = Modifier)
 }
 
 @Composable
 private fun PluginMediaImagePlaceholder(
     title: String,
+    state: PluginMediaImageState,
     modifier: Modifier
 ) {
     Box(
@@ -353,11 +365,21 @@ private fun PluginMediaImagePlaceholder(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
         ) {}
         Text(
-            text = title.take(2).ifBlank { "TV" },
+            text = when (state) {
+                PluginMediaImageState.NO_IMAGE -> "无图"
+                PluginMediaImageState.LOAD_FAILED -> "失败"
+                PluginMediaImageState.LOADING -> title.take(2).ifBlank { "TV" }
+            },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+private enum class PluginMediaImageState {
+    LOADING,
+    NO_IMAGE,
+    LOAD_FAILED
 }
 
 @Composable

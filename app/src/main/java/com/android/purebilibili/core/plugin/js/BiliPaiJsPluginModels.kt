@@ -44,7 +44,9 @@ data class BiliPaiJsMediaItem(
     val title: String,
     val description: String = "",
     val coverUrl: String? = null,
+    val coverUrls: List<String> = emptyList(),
     val backdropUrl: String? = null,
+    val backdropUrls: List<String> = emptyList(),
     val type: String = "video",
     val videoUrl: String? = null,
     val streams: List<BiliPaiJsMediaStream> = emptyList(),
@@ -64,6 +66,18 @@ val BiliPaiJsMediaItem.isPlayable: Boolean
     get() = !videoUrl.isNullOrBlank() ||
         streams.any { it.url.isNotBlank() } ||
         childItems.any { it.isPlayable }
+
+val BiliPaiJsMediaItem.hasNoImageCandidate: Boolean
+    get() = resolveBiliPaiJsMediaImageCandidates(this).isEmpty()
+
+fun resolveBiliPaiJsMediaImageCandidates(item: BiliPaiJsMediaItem): List<String> {
+    return buildList {
+        item.coverUrl?.takeIf { it.isNotBlank() }?.let(::add)
+        addAll(item.coverUrls.filter { it.isNotBlank() })
+        item.backdropUrl?.takeIf { it.isNotBlank() }?.let(::add)
+        addAll(item.backdropUrls.filter { it.isNotBlank() })
+    }.distinct()
+}
 
 fun resolveBiliPaiJsMediaStreams(item: BiliPaiJsMediaItem): List<BiliPaiJsMediaStream> {
     return buildList {

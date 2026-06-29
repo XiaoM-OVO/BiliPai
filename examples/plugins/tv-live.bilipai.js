@@ -188,7 +188,7 @@ function parseJsonSource(content, iconLibrary, iconProxyTemplate) {
         id: String(channel.id || url),
         title: cleanLeadingDash(channel.title || channel.name || "频道"),
         description: cleanLeadingDash(channel.description || channel.name || ""),
-        coverUrl: scaleIcon(
+        coverUrls: buildIconCandidates(
           channel.coverUrl ||
             channel.logo ||
             channel.backdrop_path ||
@@ -240,7 +240,7 @@ function channelMapToItems(channels) {
       id: channel.urls[0],
       title: channel.title,
       description: channel.description,
-      coverUrl: scaleIcon(channel.logoUrl, channel.iconProxyTemplate),
+      coverUrls: buildIconCandidates(channel.logoUrl, channel.iconProxyTemplate),
       type: "video",
       videoUrl: channel.urls[0],
       streams: channel.urls.slice(1).map(function(url, index) {
@@ -323,6 +323,14 @@ function resolveIconUrl(iconLibrary, channelName) {
 
 function normalizeIconName(name) {
   return cleanChannelNameForLogo(name).toLowerCase();
+}
+
+function buildIconCandidates(url, iconProxyTemplate) {
+  if (!url) return [];
+  var candidates = [url];
+  var proxied = scaleIcon(url, iconProxyTemplate);
+  if (proxied && proxied !== url) candidates.push(proxied);
+  return candidates;
 }
 
 function scaleIcon(url, iconProxyTemplate) {

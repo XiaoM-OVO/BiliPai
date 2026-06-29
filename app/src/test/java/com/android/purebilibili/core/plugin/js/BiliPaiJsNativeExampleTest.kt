@@ -19,6 +19,8 @@ class BiliPaiJsNativeExampleTest {
         assertContains(script, "iconLibraryUrl")
         assertContains(script, "iconProxyTemplate")
         assertContains(script, "useGeneratedLogoFallback")
+        assertContains(script, "coverUrls")
+        assertContains(script, "buildIconCandidates")
         assertContains(script, "parseIconLibrary")
         assertContains(script, "parsed.icons")
         assertContains(script, "{url}")
