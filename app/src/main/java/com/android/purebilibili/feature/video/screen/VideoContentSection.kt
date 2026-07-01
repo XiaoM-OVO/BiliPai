@@ -71,6 +71,7 @@ import com.android.purebilibili.data.model.response.ViewInfo
 import com.android.purebilibili.data.model.response.BgmInfo
 import com.android.purebilibili.feature.common.resolveIndexedVideoLazyKey
 import com.android.purebilibili.feature.home.components.BottomBarLiquidSegmentedControl
+import com.android.purebilibili.feature.home.components.resolveTopTabPagerPosition
 import com.android.purebilibili.feature.video.ui.section.VideoTitleWithDesc
 import com.android.purebilibili.feature.video.ui.section.UpInfoSection
 import com.android.purebilibili.feature.video.ui.section.ActionButtonsRow
@@ -475,6 +476,18 @@ fun VideoContentSection(
             }
     }
 
+    val pagerTabIndicatorPosition by remember(pagerState) {
+        derivedStateOf {
+            resolveTopTabPagerPosition(
+                selectedIndex = pagerState.currentPage,
+                pagerCurrentPage = pagerState.currentPage,
+                pagerTargetPage = pagerState.targetPage,
+                pagerCurrentPageOffsetFraction = pagerState.currentPageOffsetFraction,
+                pagerIsScrolling = pagerState.isScrollInProgress,
+            )
+        }
+    }
+
     // 采样层只挂在 Tab 页滚动内容上；排序栏/顶栏分段控件必须在捕获区外，避免 drawBackdrop 自引用导致 RenderThread 栈溢出。
     val videoContentChromeBackdrop = rememberLayerBackdrop()
     Box(
@@ -487,6 +500,8 @@ fun VideoContentSection(
             VideoContentTabBar(
                 tabs = tabs,
                 selectedTabIndex = pagerState.currentPage,
+                pagerIndicatorPosition = pagerTabIndicatorPosition,
+                pagerIsScrolling = pagerState.isScrollInProgress,
                 onTabSelected = onTabSelected,
                 onDanmakuSendClick = onDanmakuSendClick,
                 danmakuEnabled = danmakuEnabled,
@@ -1356,6 +1371,8 @@ private fun VideoDetailDanmakuSettingsPanel(
 private fun VideoContentTabBar(
     tabs: List<String>,
     selectedTabIndex: Int,
+    pagerIndicatorPosition: Float,
+    pagerIsScrolling: Boolean,
     onTabSelected: (Int) -> Unit,
     onDanmakuSendClick: () -> Unit,
     danmakuEnabled: Boolean,
@@ -1400,7 +1417,9 @@ private fun VideoContentTabBar(
                 backdrop = backdrop,
                 forceLiquidChrome = homeSettings.androidNativeLiquidGlassEnabled,
                 liquidGlassEffectsEnabled = backdrop != null,
-                tapPressRefractionEnabled = false
+                tapPressRefractionEnabled = false,
+                pagerIndicatorPosition = pagerIndicatorPosition,
+                pagerIsScrolling = pagerIsScrolling,
             )
 
             // [新增] 恢复画面按钮 (仅在播放器折叠时显示)

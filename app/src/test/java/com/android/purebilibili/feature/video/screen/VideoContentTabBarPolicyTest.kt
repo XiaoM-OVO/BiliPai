@@ -120,6 +120,14 @@ class VideoContentTabBarPolicyTest {
         )
         assertTrue(source.contains("forceLiquidChrome = homeSettings.androidNativeLiquidGlassEnabled"))
         assertTrue(source.contains("liquidGlassEffectsEnabled = backdrop != null"))
+        assertTrue(source.contains("resolveTopTabPagerPosition("))
+        assertTrue(source.contains("pagerIndicatorPosition = pagerTabIndicatorPosition"))
+        assertTrue(source.contains("pagerIsScrolling = pagerState.isScrollInProgress"))
+        val tabBarBlock = source
+            .substringAfter("fun VideoContentTabBar(")
+            .substringBefore("// [新增] 恢复画面按钮")
+        assertTrue(tabBarBlock.contains("pagerIndicatorPosition = pagerIndicatorPosition"))
+        assertTrue(tabBarBlock.contains("pagerIsScrolling = pagerIsScrolling"))
     }
 
     @Test

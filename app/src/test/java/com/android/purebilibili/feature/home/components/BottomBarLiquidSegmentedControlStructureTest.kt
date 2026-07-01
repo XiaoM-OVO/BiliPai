@@ -329,6 +329,44 @@ class BottomBarLiquidSegmentedControlStructureTest {
     }
 
     @Test
+    fun `segmented control follows pager position with liquid indicator deformation`() {
+        assertEquals(
+            0.4f,
+            resolveSegmentedControlEffectiveIndicatorPosition(
+                dragPosition = 0f,
+                pagerIndicatorPosition = 0.4f,
+                pagerIsScrolling = true,
+                dragIsDragging = false,
+                itemCount = 2,
+            )
+        )
+        assertTrue(
+            resolveSegmentedControlPagerDriven(
+                pagerIsScrolling = true,
+                pagerIndicatorPosition = 0.4f,
+                dragIsDragging = false,
+            )
+        )
+        assertFalse(
+            resolveSegmentedControlPagerDriven(
+                pagerIsScrolling = true,
+                pagerIndicatorPosition = 0.4f,
+                dragIsDragging = true,
+            )
+        )
+
+        val source = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/home/components/BottomBarLiquidSegmentedControl.kt"
+        )
+        assertTrue(source.contains("pagerIndicatorPosition: Float? = null"))
+        assertTrue(source.contains("pagerIsScrolling: Boolean = false"))
+        assertTrue(source.contains("resolveSegmentedControlEffectiveIndicatorPosition("))
+        assertTrue(source.contains("resolveTopTabPagerVelocityItemsPerSecond("))
+        assertTrue(source.contains("shouldDeformTopTabIndicator("))
+        assertTrue(source.contains("resolveTopTabIndicatorScaleProgress("))
+    }
+
+    @Test
     fun `segmented control does not attach drag gesture when drag selection is disabled`() {
         val source = loadSource(
             "app/src/main/java/com/android/purebilibili/feature/home/components/BottomBarLiquidSegmentedControl.kt"
