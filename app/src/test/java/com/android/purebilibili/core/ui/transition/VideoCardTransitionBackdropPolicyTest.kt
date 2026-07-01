@@ -129,6 +129,22 @@ class VideoCardTransitionBackdropPolicyTest {
     }
 
     @Test
+    fun expandedFraction_resolvesSessionPhases() {
+        assertEquals(
+            VideoCardTransitionPhase.IDLE,
+            resolveVideoCardTransitionSessionFromExpandedFraction(0f).phase
+        )
+        assertEquals(
+            VideoCardTransitionPhase.EXPANDED,
+            resolveVideoCardTransitionSessionFromExpandedFraction(1f).phase
+        )
+        assertEquals(
+            VideoCardTransitionPhase.COLLAPSING,
+            resolveVideoCardTransitionSessionFromExpandedFraction(0.4f).phase
+        )
+    }
+
+    @Test
     fun backdropEntryGate_requiresUnderlyingSourceAndActiveSession() {
         assertTrue(
             shouldApplyVideoCardTransitionBackdropToEntry(

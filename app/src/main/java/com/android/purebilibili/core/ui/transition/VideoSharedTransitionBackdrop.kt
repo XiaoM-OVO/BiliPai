@@ -1,8 +1,5 @@
 package com.android.purebilibili.core.ui.transition
 
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -14,12 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.util.LocalWindowSizeClass
@@ -130,8 +126,6 @@ internal fun VideoSharedTransitionBackdropDecoration(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val density = LocalDensity.current
-    val blurRadiusPx = with(density) { frame.blurRadiusDp.dp.toPx() }
     Box(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -140,16 +134,14 @@ internal fun VideoSharedTransitionBackdropDecoration(
                     scaleX = frame.scale
                     scaleY = frame.scale
                     transformOrigin = TransformOrigin(0.5f, 0.5f)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurRadiusPx > 0.5f) {
-                        renderEffect = RenderEffect.createBlurEffect(
-                            blurRadiusPx,
-                            blurRadiusPx,
-                            Shader.TileMode.CLAMP
-                        ).asComposeRenderEffect()
-                    } else {
-                        renderEffect = null
-                    }
                 }
+                .then(
+                    if (frame.blurRadiusDp > 0.5f) {
+                        Modifier.blur(frame.blurRadiusDp.dp)
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             content()
         }

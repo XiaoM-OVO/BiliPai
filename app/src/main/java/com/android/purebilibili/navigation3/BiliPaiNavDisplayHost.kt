@@ -37,6 +37,10 @@ import com.android.purebilibili.core.ui.transition.VideoCardTransitionSession
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionBackdropHost
 import com.android.purebilibili.core.ui.transition.isVideoSharedElementRouteTransition
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationHandler
@@ -195,6 +199,7 @@ internal fun BiliPaiNavDisplayHost(
         backInfo = previousSceneInfos
     )
 
+    var predictiveBackdropGestureActive by remember { mutableStateOf(false) }
     LaunchedEffect(videoCardTransitionController, sharedElementRouteTransition, navigationEventState, safeBackStack) {
         val controller = videoCardTransitionController ?: return@LaunchedEffect
         if (!sharedElementRouteTransition) return@LaunchedEffect
@@ -202,13 +207,18 @@ internal fun BiliPaiNavDisplayHost(
             .collect { state ->
                 when (state) {
                     is InProgress -> {
+                        predictiveBackdropGestureActive = true
                         val gestureProgress = state.latestEvent.progress
-                        controller.syncPredictiveExpandedFraction(1f - gestureProgress)
+                        controller.applyPredictiveBackdropFraction(1f - gestureProgress)
                     }
                     else -> {
-                        if (safeBackStack.lastOrNull() is BiliPaiNavKey.VideoDetail) {
-                            controller.syncPredictiveExpandedFraction(1f)
+                        if (
+                            predictiveBackdropGestureActive &&
+                            safeBackStack.lastOrNull() is BiliPaiNavKey.VideoDetail
+                        ) {
+                            controller.restoreExpandedBackdrop()
                         }
+                        predictiveBackdropGestureActive = false
                     }
                 }
             }

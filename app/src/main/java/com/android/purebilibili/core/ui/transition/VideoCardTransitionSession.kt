@@ -1,20 +1,22 @@
 package com.android.purebilibili.core.ui.transition
 
 import android.os.Build
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.compositionLocalOf
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.pow
 
@@ -88,9 +90,7 @@ internal fun resolveVideoCardTransitionBackdropFrame(
         return inactiveVideoCardTransitionBackdropFrame()
     }
 
-    val allowBlur = motionTier != MotionTier.Reduced &&
-        sdkInt >= Build.VERSION_CODES.S &&
-        maxBlurRadiusDp > 0f
+    val allowBlur = motionTier != MotionTier.Reduced && maxBlurRadiusDp > 0f
 
     val scale = resolveVideoCardTransitionScale(progress)
     val effectStrength = resolveVideoCardTransitionEffectStrength(
@@ -143,6 +143,20 @@ internal fun resolveVideoCardTransitionEffectStrength(
     }
 }
 
+internal fun resolveVideoCardTransitionSessionFromExpandedFraction(
+    expandedFraction: Float
+): VideoCardTransitionSession {
+    val clamped = expandedFraction.coerceIn(0f, 1f)
+    return when {
+        clamped <= VIDEO_CARD_TRANSITION_PROGRESS_EPSILON ->
+            VideoCardTransitionSession(VideoCardTransitionPhase.IDLE, 0f)
+        clamped >= 1f - VIDEO_CARD_TRANSITION_PROGRESS_EPSILON ->
+            VideoCardTransitionSession(VideoCardTransitionPhase.EXPANDED, 1f)
+        else ->
+            VideoCardTransitionSession(VideoCardTransitionPhase.COLLAPSING, clamped)
+    }
+}
+
 @Stable
 internal class VideoCardTransitionController(
     private val scope: CoroutineScope,
@@ -155,24 +169,24 @@ internal class VideoCardTransitionController(
 
     private val progressAnimatable = Animatable(0f)
     private var runningJob: Job? = null
+    private var progressObserverJob: Job? = null
 
     fun beginExpand() {
         if (!enabled) return
-        runningJob?.cancel()
+        cancelRunningAnimation()
         runningJob = scope.launch {
-            session = VideoCardTransitionSession(
-                phase = VideoCardTransitionPhase.EXPANDING,
-                progress = 0f
-            )
-            progressAnimatable.snapTo(0f)
-            progressAnimatable.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = durationMillis, easing = easing)
-            )
-            session = VideoCardTransitionSession(
-                phase = VideoCardTransitionPhase.EXPANDED,
-                progress = 1f
-            )
+            startProgressObservation(VideoCardTransitionPhase.EXPANDING)
+            try {
+                progressAnimatable.snapTo(0f)
+                publishSession(VideoCardTransitionPhase.EXPANDING, 0f)
+                progressAnimatable.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = durationMillis, easing = easing)
+                )
+                publishSession(VideoCardTransitionPhase.EXPANDED, 1f)
+            } finally {
+                stopProgressObservation()
+            }
         }
     }
 
@@ -181,48 +195,81 @@ internal class VideoCardTransitionController(
             reset()
             return
         }
-        runningJob?.cancel()
+        cancelRunningAnimation()
         runningJob = scope.launch {
-            session = session.copy(
-                phase = VideoCardTransitionPhase.COLLAPSING,
-                progress = progressAnimatable.value.coerceIn(0f, 1f)
-            )
-            if (skipBackdropEffects) {
-                progressAnimatable.snapTo(0f)
-            } else {
-                progressAnimatable.animateTo(
-                    targetValue = 0f,
-                    animationSpec = tween(durationMillis = durationMillis, easing = easing)
-                )
+            val startProgress = progressAnimatable.value.coerceIn(0f, 1f)
+            startProgressObservation(VideoCardTransitionPhase.COLLAPSING)
+            try {
+                publishSession(VideoCardTransitionPhase.COLLAPSING, startProgress)
+                if (skipBackdropEffects) {
+                    progressAnimatable.snapTo(0f)
+                    publishSession(VideoCardTransitionPhase.IDLE, 0f)
+                } else {
+                    progressAnimatable.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = durationMillis, easing = easing)
+                    )
+                    publishSession(VideoCardTransitionPhase.IDLE, 0f)
+                }
+            } finally {
+                stopProgressObservation()
             }
-            reset()
         }
     }
 
-    fun syncPredictiveExpandedFraction(expandedFraction: Float) {
+    fun applyPredictiveBackdropFraction(expandedFraction: Float) {
         if (!enabled) return
-        runningJob?.cancel()
+        cancelRunningAnimation()
         val clamped = expandedFraction.coerceIn(0f, 1f)
-        scope.launch {
+        runningJob = scope.launch {
             progressAnimatable.snapTo(clamped)
-            session = when {
-                clamped <= VIDEO_CARD_TRANSITION_PROGRESS_EPSILON ->
-                    VideoCardTransitionSession(VideoCardTransitionPhase.IDLE, 0f)
-                clamped >= 1f - VIDEO_CARD_TRANSITION_PROGRESS_EPSILON ->
-                    VideoCardTransitionSession(VideoCardTransitionPhase.EXPANDED, 1f)
-                else ->
-                    VideoCardTransitionSession(VideoCardTransitionPhase.COLLAPSING, clamped)
-            }
+            session = resolveVideoCardTransitionSessionFromExpandedFraction(clamped)
+        }
+    }
+
+    fun restoreExpandedBackdrop() {
+        if (!enabled) return
+        cancelRunningAnimation()
+        runningJob = scope.launch {
+            progressAnimatable.snapTo(1f)
+            publishSession(VideoCardTransitionPhase.EXPANDED, 1f)
         }
     }
 
     fun reset() {
+        cancelRunningAnimation()
+        runningJob = scope.launch {
+            progressAnimatable.snapTo(0f)
+            publishSession(VideoCardTransitionPhase.IDLE, 0f)
+        }
+    }
+
+    private fun startProgressObservation(phase: VideoCardTransitionPhase) {
+        stopProgressObservation()
+        progressObserverJob = scope.launch {
+            snapshotFlow { progressAnimatable.value }.collect { value ->
+                if (!isActive) return@collect
+                publishSession(phase, value.coerceIn(0f, 1f))
+            }
+        }
+    }
+
+    private fun stopProgressObservation() {
+        progressObserverJob?.cancel()
+        progressObserverJob = null
+    }
+
+    private fun publishSession(phase: VideoCardTransitionPhase, progress: Float) {
+        session = VideoCardTransitionSession(
+            phase = phase,
+            progress = progress.coerceIn(0f, 1f)
+        )
+    }
+
+    private fun cancelRunningAnimation() {
         runningJob?.cancel()
         runningJob = null
-        scope.launch {
-            progressAnimatable.snapTo(0f)
-            session = VideoCardTransitionSession()
-        }
+        stopProgressObservation()
     }
 }
 
