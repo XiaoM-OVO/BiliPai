@@ -122,6 +122,7 @@ import com.android.purebilibili.feature.article.resolveHistoryArticleCoverAspect
 import com.android.purebilibili.feature.article.resolveArticleSharedTransitionKey
 import com.android.purebilibili.feature.settings.IOSSlidingSegmentedControl
 import com.android.purebilibili.feature.settings.PlaybackSegmentOption
+import com.android.purebilibili.feature.home.components.BottomBarLiquidSegmentedControl
 import com.android.purebilibili.feature.space.SeasonSeriesDetailViewModel
 import com.android.purebilibili.feature.video.player.ExternalPlaylistSource
 import com.android.purebilibili.feature.video.player.PlayMode
@@ -679,6 +680,13 @@ fun CommonListScreen(
             androidNativeVariant = androidNativeVariant
         )
     }
+    val historyFilterChrome = remember(homeSettings, uiPreset, androidNativeVariant) {
+        resolveHistoryFilterTabChromeSpec(
+            homeSettings = homeSettings,
+            uiPreset = uiPreset,
+            androidNativeVariant = androidNativeVariant
+        )
+    }
     val blurIntensity = currentUnifiedBlurIntensity()
     val backgroundAlpha = BlurStyles.getBackgroundAlpha(blurIntensity)
     val headerBackgroundAlpha = if (favoriteViewModel != null) {
@@ -1202,30 +1210,68 @@ fun CommonListScreen(
                     }
 
                     if (historyViewModel != null) {
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        val historyFilterLabels = remember {
+                            HistoryContentFilter.entries.map { it.label }
+                        }
+                        val selectedHistoryFilterIndex = remember(historyContentFilter) {
+                            HistoryContentFilter.entries.indexOf(historyContentFilter).coerceAtLeast(0)
+                        }
+                        val onHistoryFilterSelected: (HistoryContentFilter) -> Unit = { filter ->
+                            if (filter != historyContentFilter) {
+                                historyContentFilter = filter
+                                selectedHistoryKeys = emptySet()
+                                scope.launch {
+                                    primaryGridState.scrollToItem(0)
+                                }
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = historyFilterChrome.horizontalPaddingDp.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            items(HistoryContentFilter.entries, key = { it.name }) { filter ->
-                                FilterChip(
-                                    selected = historyContentFilter == filter,
-                                    enabled = !isHistoryBatchMode,
-                                    onClick = {
-                                        historyContentFilter = filter
-                                        selectedHistoryKeys = emptySet()
-                                        scope.launch {
-                                            primaryGridState.scrollToItem(0)
-                                        }
+                            if (historyFilterChrome.useLiquidDock) {
+                                BottomBarLiquidSegmentedControl(
+                                    items = historyFilterLabels,
+                                    selectedIndex = selectedHistoryFilterIndex,
+                                    onSelected = { index ->
+                                        HistoryContentFilter.entries.getOrNull(index)?.let(onHistoryFilterSelected)
                                     },
-                                    label = { Text(filter.label) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = MaterialTheme.colorScheme.surface,
-                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                    enabled = !isHistoryBatchMode,
+                                    itemWidth = historyFilterChrome.itemWidthDp.dp,
+                                    height = historyFilterChrome.heightDp.dp,
+                                    indicatorHeight = historyFilterChrome.indicatorHeightDp.dp,
+                                    labelFontSize = historyFilterChrome.labelFontSizeSp.sp,
+                                    backdrop = commonListChromeBackdrop,
+                                    forceLiquidChrome = homeSettings.androidNativeLiquidGlassEnabled,
+                                    liquidGlassEffectsEnabled = true,
+                                    dragSelectionEnabled = historyFilterChrome.dragSelectionEnabled,
+                                    tapPressRefractionEnabled = true
                                 )
+                            } else {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        space = 8.dp,
+                                        alignment = Alignment.CenterHorizontally
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    items(HistoryContentFilter.entries, key = { it.name }) { filter ->
+                                        FilterChip(
+                                            selected = historyContentFilter == filter,
+                                            enabled = !isHistoryBatchMode,
+                                            onClick = { onHistoryFilterSelected(filter) },
+                                            label = { Text(filter.label) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                containerColor = MaterialTheme.colorScheme.surface,
+                                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
