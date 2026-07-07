@@ -1,6 +1,7 @@
 package com.android.purebilibili.feature.home.components.cards
 
 import androidx.compose.ui.graphics.Color
+import com.android.purebilibili.core.ui.transition.VideoCardTransitionBackgroundPhase
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -175,5 +176,69 @@ class VideoCardScrollLiteVisualPolicyTest {
 
         assertTrue(cardSource.contains("trailingSlotMinHeight = 20.dp"))
         assertTrue(upBadgeSource.contains(".heightIn(min = trailingSlotMinHeight)"))
+    }
+
+    @Test
+    fun homeCardCover_hiddenDuringShellEnterMorphOnly() {
+        assertTrue(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = false,
+                isSharedTransitionActive = true,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.OPENING,
+                isVideoCardReturnGestureInProgress = false,
+            )
+        )
+        assertFalse(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = false,
+                isSharedTransitionActive = false,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.OPENING,
+                isVideoCardReturnGestureInProgress = false,
+            )
+        )
+        assertFalse(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = true,
+                isSharedTransitionActive = true,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.OPENING,
+                isVideoCardReturnGestureInProgress = false,
+            )
+        )
+        assertFalse(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = false,
+                isSharedTransitionActive = true,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.HELD,
+                isVideoCardReturnGestureInProgress = false,
+            )
+        )
+        assertFalse(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = false,
+                isSharedTransitionActive = true,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.IDLE,
+                isVideoCardReturnGestureInProgress = false,
+            )
+        )
+        assertFalse(
+            shouldHideHomeCardCoverDuringShellMorph(
+                useCardContainerSharedBounds = true,
+                isSharedMorphSourceCard = true,
+                isReturningFromDetail = false,
+                isSharedTransitionActive = true,
+                transitionBackgroundPhase = VideoCardTransitionBackgroundPhase.OPENING,
+                isVideoCardReturnGestureInProgress = true,
+            )
+        )
     }
 }

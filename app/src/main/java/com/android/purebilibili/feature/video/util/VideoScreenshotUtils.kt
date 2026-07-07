@@ -11,7 +11,6 @@ import android.provider.MediaStore
 import android.view.PixelCopy
 import android.view.SurfaceView
 import android.view.TextureView
-import android.view.View
 import androidx.media3.ui.PlayerView
 import com.android.purebilibili.core.util.Logger
 import kotlinx.coroutines.Dispatchers
@@ -63,29 +62,8 @@ suspend fun captureAndSaveVideoScreenshot(
     videoTitle: String,
     timestampMs: Long = System.currentTimeMillis(),
 ): Boolean {
-    return captureAndSaveVideoScreenshotFromSurface(
-        context = context,
-        surfaceView = playerView.videoSurfaceView,
-        fallbackView = playerView,
-        videoWidth = videoWidth,
-        videoHeight = videoHeight,
-        videoTitle = videoTitle,
-        timestampMs = timestampMs,
-    )
-}
-
-suspend fun captureAndSaveVideoScreenshotFromSurface(
-    context: Context,
-    surfaceView: View?,
-    fallbackView: View? = null,
-    videoWidth: Int,
-    videoHeight: Int,
-    videoTitle: String,
-    timestampMs: Long = System.currentTimeMillis(),
-): Boolean {
-    val bitmap = captureVideoScreenshotFromSurface(
-        surfaceView = surfaceView,
-        fallbackView = fallbackView,
+    val bitmap = captureVideoScreenshot(
+        playerView = playerView,
         videoWidth = videoWidth,
         videoHeight = videoHeight,
     ) ?: return false
@@ -103,29 +81,18 @@ suspend fun captureVideoScreenshot(
     playerView: PlayerView,
     videoWidth: Int,
     videoHeight: Int,
-): Bitmap? = captureVideoScreenshotFromSurface(
-    surfaceView = playerView.videoSurfaceView,
-    fallbackView = playerView,
-    videoWidth = videoWidth,
-    videoHeight = videoHeight,
-)
-
-suspend fun captureVideoScreenshotFromSurface(
-    surfaceView: View?,
-    fallbackView: View? = null,
-    videoWidth: Int,
-    videoHeight: Int,
 ): Bitmap? = withContext(Dispatchers.Main.immediate) {
+    val videoSurface = playerView.videoSurfaceView
     val (targetWidth, targetHeight) = resolveScreenshotDimensions(
         videoWidth = videoWidth,
         videoHeight = videoHeight,
-        surfaceWidth = surfaceView?.width ?: fallbackView?.width ?: 0,
-        surfaceHeight = surfaceView?.height ?: fallbackView?.height ?: 0,
+        surfaceWidth = videoSurface?.width ?: playerView.width,
+        surfaceHeight = videoSurface?.height ?: playerView.height,
     )
 
-    when (surfaceView) {
+    when (videoSurface) {
         is TextureView -> {
-            val bitmap = runCatching { surfaceView.getBitmap(targetWidth, targetHeight) }.getOrNull()
+            val bitmap = runCatching { videoSurface.getBitmap(targetWidth, targetHeight) }.getOrNull()
             if (bitmap == null) {
                 Logger.w("VideoScreenshot", "TextureView getBitmap returned null")
                 null
@@ -135,19 +102,18 @@ suspend fun captureVideoScreenshotFromSurface(
         }
 
         is SurfaceView -> captureSurfaceViewBitmap(
-            surfaceView = surfaceView,
+            surfaceView = videoSurface,
             targetWidth = targetWidth,
             targetHeight = targetHeight,
         )
 
         else -> {
-            val fallback = fallbackView ?: return@withContext null
-            val fallbackWidth = maxOf(fallback.width, 1)
-            val fallbackHeight = maxOf(fallback.height, 1)
+            val fallbackWidth = maxOf(playerView.width, 1)
+            val fallbackHeight = maxOf(playerView.height, 1)
             val fallbackBitmap = runCatching {
                 Bitmap.createBitmap(fallbackWidth, fallbackHeight, Bitmap.Config.ARGB_8888).also { bitmap ->
                     val canvas = Canvas(bitmap)
-                    fallback.draw(canvas)
+                    playerView.draw(canvas)
                 }
             }.getOrNull()
 

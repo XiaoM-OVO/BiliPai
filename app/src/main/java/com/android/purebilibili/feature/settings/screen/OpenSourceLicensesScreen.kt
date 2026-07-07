@@ -20,7 +20,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.purebilibili.R
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -330,7 +329,6 @@ fun OpenSourceLicensesScreen(
         onBack = onBack,
         backContentDescription = backLabel,
         bottomContentPadding = bottomContentPadding,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
         lazyListContent = {
             item {
                 Column(

@@ -376,9 +376,9 @@ internal fun snapshotPortraitPageBvids(
 internal fun shouldRecoverPortraitPagerSurfaceOnResume(
     isCurrentPage: Boolean,
     isPlayerReadyForThisVideo: Boolean,
-    hasPlayerSurface: Boolean
+    hasPlayerView: Boolean
 ): Boolean {
-    return isCurrentPage && isPlayerReadyForThisVideo && hasPlayerSurface
+    return isCurrentPage && isPlayerReadyForThisVideo && hasPlayerView
 }
 
 internal fun toViewInfoForPortraitDetail(related: RelatedVideo): ViewInfo {

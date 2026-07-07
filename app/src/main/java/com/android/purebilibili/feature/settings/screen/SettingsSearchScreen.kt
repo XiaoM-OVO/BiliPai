@@ -4,13 +4,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,6 +22,7 @@ import com.android.purebilibili.R
 import com.android.purebilibili.core.ui.LocalBottomBarVisible
 import com.android.purebilibili.core.ui.animation.EntranceGroup
 import com.android.purebilibili.core.util.LocalWindowSizeClass
+import com.android.purebilibili.feature.settings.SettingsPageScrollHost
 import com.android.purebilibili.feature.settings.SettingsRootCategory
 import com.android.purebilibili.feature.settings.SettingsRootCategoryEntranceSection
 import com.android.purebilibili.feature.settings.SettingsSearchBarSection
@@ -41,7 +44,7 @@ fun SettingsSearchScreen(
     onCategoryClick: (SettingsRootCategory) -> Unit = {},
     mainHazeState: HazeState? = null,
 ) {
-    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember(searchQuery) {
         resolveSettingsSearchResults(query = searchQuery, maxResults = 20)
     }
@@ -60,13 +63,20 @@ fun SettingsSearchScreen(
         onBack = onBack,
         backContentDescription = stringResource(R.string.common_back),
         bottomContentPadding = bottomInset,
+        scrollHost = SettingsPageScrollHost.External,
+        header = {
+            SettingsSearchBarSection(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+            )
+        },
     ) {
-        EntranceGroup(startWhen = true) {
-            Column {
-                SettingsSearchBarSection(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            EntranceGroup(startWhen = true) {
                 SettingsRootCategoryEntranceSection {
                     SettingsSearchResultsSection(
                         results = searchResults,
@@ -80,8 +90,8 @@ fun SettingsSearchScreen(
                         },
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

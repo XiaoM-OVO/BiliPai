@@ -134,6 +134,23 @@ class VideoCardTransitionBackgroundPolicyTest {
     }
 
     @Test
+    fun openingFrameKeepsScaleDuringReturnButFreezesDuringGestureRestore() {
+        val openingScale = resolveVideoCardTransitionOpeningContentScale(
+            progress = 1f,
+            phase = VideoCardTransitionBackgroundPhase.OPENING,
+            isGestureRestoreInProgress = false,
+        )
+        val restoreScale = resolveVideoCardTransitionOpeningContentScale(
+            progress = 1f,
+            phase = VideoCardTransitionBackgroundPhase.OPENING,
+            isGestureRestoreInProgress = true,
+        )
+
+        assertTrue(openingScale < 1f)
+        assertEquals(1f, restoreScale)
+    }
+
+    @Test
     fun idleFrameClearsBackgroundEffect() {
         val frame = resolveVideoCardTransitionBackgroundFrame(
             progress = 1f,
@@ -312,5 +329,85 @@ class VideoCardTransitionBackgroundPolicyTest {
             VIDEO_CARD_TRANSITION_BACKGROUND_CANCEL_DURATION_MS,
             resolveVideoCardTransitionBackgroundReturnDurationMs(0.05f)
         )
+    }
+
+    @Test
+    fun navBackdropVisibleOnlyDuringHeldOrOpeningOnVideoDetail() {
+        assertTrue(
+            shouldShowVideoCardTransitionNavBackdrop(
+                cardTransitionEnabled = true,
+                phase = VideoCardTransitionBackgroundPhase.HELD,
+                isVideoDetailOnStack = true,
+            )
+        )
+        assertTrue(
+            shouldShowVideoCardTransitionNavBackdrop(
+                cardTransitionEnabled = true,
+                phase = VideoCardTransitionBackgroundPhase.OPENING,
+                isVideoDetailOnStack = true,
+            )
+        )
+        assertFalse(
+            shouldShowVideoCardTransitionNavBackdrop(
+                cardTransitionEnabled = true,
+                phase = VideoCardTransitionBackgroundPhase.RETURNING,
+                isVideoDetailOnStack = true,
+            )
+        )
+        assertFalse(
+            shouldShowVideoCardTransitionNavBackdrop(
+                cardTransitionEnabled = false,
+                phase = VideoCardTransitionBackgroundPhase.HELD,
+                isVideoDetailOnStack = true,
+            )
+        )
+        assertFalse(
+            shouldShowVideoCardTransitionNavBackdrop(
+                cardTransitionEnabled = true,
+                phase = VideoCardTransitionBackgroundPhase.HELD,
+                isVideoDetailOnStack = false,
+            )
+        )
+    }
+
+    @Test
+    fun navBackdropFrameTracksBlurStrengthDuringHeldAndOpening() {
+        val heldFull = resolveVideoCardTransitionNavBackdropFrame(
+            progress = 1f,
+            phase = VideoCardTransitionBackgroundPhase.HELD,
+            isLightBackground = true,
+        )
+        val heldHalf = resolveVideoCardTransitionNavBackdropFrame(
+            progress = 0.5f,
+            phase = VideoCardTransitionBackgroundPhase.HELD,
+            isLightBackground = true,
+        )
+        val openingFull = resolveVideoCardTransitionNavBackdropFrame(
+            progress = 1f,
+            phase = VideoCardTransitionBackgroundPhase.OPENING,
+            isLightBackground = false,
+        )
+
+        assertEquals(0.10f, heldFull.scrimAlpha)
+        assertTrue(heldHalf.scrimAlpha < heldFull.scrimAlpha)
+        assertEquals(0.22f, openingFull.scrimAlpha)
+        assertTrue(heldFull.useLightScrimTint)
+        assertFalse(openingFull.useLightScrimTint)
+    }
+
+    @Test
+    fun navBackdropColorLerpsFromBaseBackgroundTowardScrimTint() {
+        val base = androidx.compose.ui.graphics.Color.White
+        val frame = VideoCardTransitionNavBackdropFrame(
+            scrimAlpha = 0.10f,
+            useLightScrimTint = true,
+        )
+        val blended = resolveVideoCardTransitionNavBackdropColor(
+            baseBackgroundColor = base,
+            frame = frame,
+        )
+
+        assertTrue(blended != base)
+        assertTrue(blended.alpha > 0f)
     }
 }

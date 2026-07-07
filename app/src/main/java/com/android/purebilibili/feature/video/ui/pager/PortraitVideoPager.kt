@@ -48,7 +48,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -86,7 +85,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -99,7 +97,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
-import android.view.View
+import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.android.purebilibili.core.network.NetworkModule
 import com.android.purebilibili.core.plugin.PluginManager
@@ -136,9 +134,7 @@ import com.android.purebilibili.feature.video.ui.overlay.PortraitFullscreenOverl
 import com.android.purebilibili.feature.video.player.resolveHandleAudioFocusByPolicy
 import com.android.purebilibili.feature.video.ui.section.FOREGROUND_SURFACE_RECOVERY_DELAY_MS
 import com.android.purebilibili.feature.video.ui.section.resolveLongPressPlaybackParameters
-import com.android.purebilibili.feature.video.ui.section.rebindVideoSurfaceViewIfNeeded
-import com.android.purebilibili.feature.video.ui.section.resolveVideoPlayerScalingMode
-import com.android.purebilibili.feature.video.ui.section.VideoPlayerSurfacePresentationHost
+import com.android.purebilibili.feature.video.ui.section.rebindPlayerSurfaceIfNeeded
 import com.android.purebilibili.feature.video.ui.section.shouldKickPlaybackAfterSurfaceRecovery
 import com.android.purebilibili.feature.video.viewmodel.PlaybackEndAction
 import com.android.purebilibili.feature.video.viewmodel.PlayerUiState
@@ -1186,7 +1182,7 @@ private fun VideoPageItem(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    var videoSurfaceRef by remember { mutableStateOf<View?>(null) }
+    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     val longPressSpeed by SettingsManager
         .getLongPressSpeed(context)
         .collectAsStateWithLifecycle(initialValue = 2.0f
@@ -1267,7 +1263,7 @@ private fun VideoPageItem(
         }
     }
 
-    // [逻辑] 只有当播放器正在播放当前视频时，才绑定并显示 Compose surface
+    // [逻辑] 只有当播放器正在播放当前视频时，才显示 PlayerView
     val isPlayerReadyForThisVideo = bvid == currentPlayingBvid
     val shouldKeepPortraitPagerItemAwake = isPortraitPlaybackAllowed &&
         keepPortraitPagerAwake &&
@@ -1283,29 +1279,18 @@ private fun VideoPageItem(
         currentPlayingAid = currentPlayingAid
     )
 
-    val composeRootView = LocalView.current
-    SideEffect {
-        composeRootView.keepScreenOn = shouldKeepPortraitPagerItemAwake
-    }
-    val portraitPagerScalingMode = resolveVideoPlayerScalingMode(VideoAspectRatio.FIT)
-    SideEffect {
-        if (isPlayerReadyForThisVideo && exoPlayer.videoScalingMode != portraitPagerScalingMode) {
-            exoPlayer.videoScalingMode = portraitPagerScalingMode
-        }
-    }
-
     LaunchedEffect(
-        videoSurfaceRef,
+        playerViewRef,
         isCurrentPage,
         isPlayerReadyForThisVideo,
         currentPlayingBvid,
         exoPlayer.videoSize
     ) {
-        val surfaceView = videoSurfaceRef ?: return@LaunchedEffect
+        val view = playerViewRef ?: return@LaunchedEffect
         if (!shouldRebindSharedPlayerSurfaceOnAttach(
                 isCurrentPage = isCurrentPage,
                 isPlayerReadyForThisVideo = isPlayerReadyForThisVideo,
-                hasPlayerSurface = true,
+                hasPlayerView = true,
                 videoWidth = exoPlayer.videoSize.width,
                 videoHeight = exoPlayer.videoSize.height
             )
@@ -1313,46 +1298,47 @@ private fun VideoPageItem(
             return@LaunchedEffect
         }
 
-        rebindVideoSurfaceViewIfNeeded(surfaceView = surfaceView, player = exoPlayer)
+        // Force the shared player to hand over its surface to the portrait pager view.
+        rebindPlayerSurfaceIfNeeded(playerView = view, player = exoPlayer)
     }
 
     DisposableEffect(
         lifecycleOwner,
         exoPlayer,
-        videoSurfaceRef,
+        playerViewRef,
         isCurrentPage,
         isPlayerReadyForThisVideo
     ) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event != androidx.lifecycle.Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
-            val surfaceView = videoSurfaceRef
+            val view = playerViewRef
             if (
                 !shouldRecoverPortraitPagerSurfaceOnResume(
                     isCurrentPage = isCurrentPage,
                     isPlayerReadyForThisVideo = isPlayerReadyForThisVideo,
-                    hasPlayerSurface = surfaceView != null
+                    hasPlayerView = view != null
                 )
             ) {
                 return@LifecycleEventObserver
             }
 
-            surfaceView?.let {
-                rebindVideoSurfaceViewIfNeeded(surfaceView = it, player = exoPlayer)
+            view?.let { playerView ->
+                rebindPlayerSurfaceIfNeeded(playerView = playerView, player = exoPlayer)
             }
             scope.launch {
                 delay(FOREGROUND_SURFACE_RECOVERY_DELAY_MS)
-                val retrySurface = videoSurfaceRef ?: return@launch
+                val retryView = playerViewRef ?: return@launch
                 if (
                     !shouldRecoverPortraitPagerSurfaceOnResume(
                         isCurrentPage = isCurrentPage,
                         isPlayerReadyForThisVideo = isPlayerReadyForThisVideo,
-                        hasPlayerSurface = true
+                        hasPlayerView = true
                     )
                 ) {
                     return@launch
                 }
 
-                rebindVideoSurfaceViewIfNeeded(surfaceView = retrySurface, player = exoPlayer)
+                rebindPlayerSurfaceIfNeeded(playerView = retryView, player = exoPlayer)
                 if (
                     shouldKickPlaybackAfterSurfaceRecovery(
                         playWhenReady = exoPlayer.playWhenReady,
@@ -1769,7 +1755,10 @@ private fun VideoPageItem(
             WindowInsets.statusBars.getTop(this).toDp()
         }
 
-        // 当前页且播放器已绑定当前视频时，使用 Media3 Compose surface 渲染
+        // [核心逻辑]
+        // 始终保留 AndroidView 以确保 Surface 准备就绪，但只有当播放器加载了当前视频时才将其绑定或显示
+        // 否则显示封面
+        
         if (isCurrentPage && isPlayerReadyForThisVideo) {
             PortraitVideoViewportContainer(
                 currentVideoAspect = currentVideoAspect,
@@ -1780,11 +1769,30 @@ private fun VideoPageItem(
                     Box(
                         modifier = viewportTransformModifier
                     ) {
-                        VideoPlayerSurfacePresentationHost(
-                            player = exoPlayer,
-                            modifier = Modifier.fillMaxSize(),
-                            keepContentOnReset = true,
-                            onSurfaceViewChanged = { videoSurfaceRef = it },
+                        AndroidView(
+                            factory = { ctx ->
+                                PlayerView(ctx).apply {
+                                    playerViewRef = this
+                                    player = exoPlayer
+                                    useController = false
+                                    keepScreenOn = shouldKeepPortraitPagerItemAwake
+                                    resizeMode = resolvePortraitPagerResizeMode()
+                                    setKeepContentOnPlayerReset(true)
+                                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                    setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+                                }
+                            },
+                            update = { view ->
+                                playerViewRef = view
+                                if (view.player != exoPlayer) {
+                                    view.player = exoPlayer
+                                }
+                                view.keepScreenOn = shouldKeepPortraitPagerItemAwake
+                                if (view.resizeMode != resolvePortraitPagerResizeMode()) {
+                                    view.resizeMode = resolvePortraitPagerResizeMode()
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
                         )
 
                         if (danmakuEnabled && danmakuSurfaceMode == PortraitDanmakuSurfaceMode.VideoViewport) {
@@ -1792,7 +1800,7 @@ private fun VideoPageItem(
                                 danmakuManager = danmakuManager,
                                 videoWidth = exoPlayer.videoSize.width,
                                 videoHeight = exoPlayer.videoSize.height,
-                                resizeMode = resolvePortraitPagerResizeMode(),
+                                resizeMode = playerViewRef?.resizeMode ?: resolvePortraitPagerResizeMode(),
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -1811,7 +1819,7 @@ private fun VideoPageItem(
                 danmakuManager = danmakuManager,
                 videoWidth = exoPlayer.videoSize.width,
                 videoHeight = exoPlayer.videoSize.height,
-                resizeMode = resolvePortraitPagerResizeMode(),
+                resizeMode = playerViewRef?.resizeMode ?: resolvePortraitPagerResizeMode(),
                 modifier = pageDanmakuModifier.then(
                     if (shouldInsetPortraitDanmakuFromStatusBar(danmakuSurfaceMode)) {
                         Modifier.padding(top = pageDanmakuTopInset)
@@ -2771,9 +2779,9 @@ internal fun resolveAspectRatioFromDimension(
 internal fun shouldRebindSharedPlayerSurfaceOnAttach(
     isCurrentPage: Boolean,
     isPlayerReadyForThisVideo: Boolean,
-    hasPlayerSurface: Boolean,
+    hasPlayerView: Boolean,
     videoWidth: Int,
     videoHeight: Int
 ): Boolean {
-    return isCurrentPage && isPlayerReadyForThisVideo && hasPlayerSurface
+    return isCurrentPage && isPlayerReadyForThisVideo && hasPlayerView
 }

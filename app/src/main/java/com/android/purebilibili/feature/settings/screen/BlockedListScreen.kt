@@ -23,7 +23,6 @@ import com.android.purebilibili.data.repository.BilibiliBlockedListSyncRepositor
 import com.android.purebilibili.data.repository.BlockedUpRepository
 import com.android.purebilibili.data.repository.buildBlockedUpShareText
 import com.android.purebilibili.data.repository.parseBlockedUpShareText
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -90,7 +89,6 @@ fun BlockedListScreen(
         backContentDescription = backLabel,
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         BlockedListContent(
             blockedUps = blockedUps,

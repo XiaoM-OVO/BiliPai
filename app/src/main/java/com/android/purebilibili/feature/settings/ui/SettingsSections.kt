@@ -62,7 +62,6 @@ import com.android.purebilibili.core.ui.common.copyOnLongPress
 import com.android.purebilibili.core.ui.components.AppAdaptiveSwitch
 import com.android.purebilibili.core.ui.components.rememberAdaptiveSemanticIconTint
 import com.android.purebilibili.core.ui.components.resolveAdaptiveListComponentVisualSpec
-import com.android.purebilibili.core.ui.components.IOSSearchBar
 import com.android.purebilibili.core.ui.components.resolveAdaptiveListRowVisualSpec
 import androidx.compose.ui.res.stringResource
 import com.android.purebilibili.core.ui.IOSAlertDialog
@@ -111,6 +110,7 @@ private fun SettingsAdaptiveDivider() {
 private fun SettingsCardGroup(
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val uiPreset = LocalUiPreset.current
     val isDark = AppSurfaceTokens.groupedListContainer().luminance() < 0.45f
     val darkTintBase = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
     val baseCardContainer = AppSurfaceTokens.cardContainer()
@@ -127,7 +127,11 @@ private fun SettingsCardGroup(
 
     SettingsGroup(
         containerColor = containerColor,
-        shape = AppShapes.container(ContainerLevel.Dialog),
+        shape = if (uiPreset == UiPreset.IOS) {
+            null
+        } else {
+            AppShapes.container(ContainerLevel.Dialog)
+        },
         border = BorderStroke(0.6.dp, borderColor)
     ) {
         content()
@@ -461,27 +465,6 @@ private fun SettingsRootCategoryRow(
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             modifier = Modifier.size(14.dp),
-        )
-    }
-}
-
-@Composable
-internal fun SettingsHomeSearchEntry(
-    onClick: () -> Unit,
-) {
-    val visualSpec = resolveSettingsVisualSpec()
-    Box(
-        modifier = Modifier
-            .padding(
-                horizontal = visualSpec.screenHorizontalPadding,
-                vertical = visualSpec.searchBarVerticalPadding,
-            )
-            .clickable(onClick = onClick),
-    ) {
-        IOSSearchBar(
-            query = "",
-            onQueryChange = {},
-            placeholder = stringResource(R.string.settings_search_placeholder),
         )
     }
 }

@@ -1,5 +1,7 @@
 package com.android.purebilibili.feature.home.components.cards
 
+import com.android.purebilibili.core.ui.transition.VideoCardTransitionBackgroundPhase
+
 internal data class VideoCardScrollLiteVisualPolicy(
     val coverShadowElevationDp: Float,
     val showCoverGradientMask: Boolean,
@@ -39,6 +41,34 @@ internal fun shouldEnableVideoCardCoverCrossfade(
 ): Boolean {
     // 返回目标封面由 sharedBounds 承接播放器画面，Coil 淡入会在落位后再次改变亮度导致闪烁。
     return !(isReturningFromDetail && useCoverSharedBounds && isSharedReturnTarget)
+}
+
+/**
+ * 首页卡片 → 详情页 CARD_SHELL morph 期间，源卡片封面应让位给 overlay，
+ * 避免列表里仍显示一张静态封面而与详情页封面重影。
+ *
+ * 仅 forward 进入详情(OPENING) 时隐藏；返回 morph（HELD/IDLE、预测式手势、已提交返回）
+ * 必须保留真实封面，否则会露出 surfaceVariant 占位色。
+ */
+internal fun shouldHideHomeCardCoverDuringShellMorph(
+    useCardContainerSharedBounds: Boolean,
+    isSharedMorphSourceCard: Boolean,
+    isReturningFromDetail: Boolean,
+    isSharedTransitionActive: Boolean,
+    transitionBackgroundPhase: VideoCardTransitionBackgroundPhase,
+    isVideoCardReturnGestureInProgress: Boolean,
+): Boolean {
+    if (!useCardContainerSharedBounds || !isSharedMorphSourceCard || !isSharedTransitionActive) {
+        return false
+    }
+    if (
+        isReturningFromDetail ||
+        isVideoCardReturnGestureInProgress ||
+        transitionBackgroundPhase != VideoCardTransitionBackgroundPhase.OPENING
+    ) {
+        return false
+    }
+    return true
 }
 
 internal data class StoryVideoCardScrollLiteVisualPolicy(

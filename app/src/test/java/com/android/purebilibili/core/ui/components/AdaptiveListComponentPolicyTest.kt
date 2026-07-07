@@ -247,6 +247,57 @@ class AdaptiveListComponentPolicyTest {
     }
 
     @Test
+    fun `force expanded search bar uses outlined text field on md3`() {
+        val source = listOf(
+            java.io.File("app/src/main/java/com/android/purebilibili/core/ui/components/iOSListComponents.kt"),
+            java.io.File("src/main/java/com/android/purebilibili/core/ui/components/iOSListComponents.kt"),
+        ).first { it.exists() }.readText()
+        val forceExpandedStart = source.indexOf("if (forceExpandedInput) {")
+        val outlinedFieldStart = source.indexOf("OutlinedTextField(", forceExpandedStart)
+        assertTrue(forceExpandedStart >= 0)
+        assertTrue(outlinedFieldStart > forceExpandedStart)
+        assertTrue(source.substring(forceExpandedStart, outlinedFieldStart).contains("focusRequester"))
+    }
+
+    @Test
+    fun `settings search screen pins input in scaffold header`() {
+        val source = listOf(
+            java.io.File("app/src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchScreen.kt"),
+            java.io.File("src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchScreen.kt"),
+        ).first { it.exists() }.readText()
+        assertTrue(source.contains("scrollHost = SettingsPageScrollHost.External"))
+        assertTrue(source.contains("header = {"))
+        assertTrue(source.contains("SettingsSearchBarSection("))
+        val headerIndex = source.indexOf("header = {")
+        val scrollIndex = source.indexOf(".verticalScroll(", headerIndex)
+        assertTrue(headerIndex >= 0)
+        assertTrue(scrollIndex > headerIndex)
+    }
+
+    @Test
+    fun `settings search bar uses dedicated ios basic text field`() {
+        val source = listOf(
+            java.io.File("app/src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchUi.kt"),
+            java.io.File("src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchUi.kt"),
+        ).first { it.exists() }.readText()
+        assertTrue(source.contains("fun SettingsSearchBarSection"))
+        assertTrue(source.contains("BasicTextField("))
+        assertFalse(source.contains("IOSSearchBar("))
+    }
+
+    @Test
+    fun `settings search bar uses expanded miuix input field`() {
+        val settingsSearchSource = listOf(
+            java.io.File("app/src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchUi.kt"),
+            java.io.File("src/main/java/com/android/purebilibili/feature/settings/screen/SettingsSearchUi.kt"),
+        ).first { it.exists() }.readText()
+        assertTrue(settingsSearchSource.contains("InputField("))
+        assertTrue(settingsSearchSource.contains("expanded = true"))
+        assertTrue(settingsSearchSource.contains("OutlinedTextField("))
+        assertTrue(settingsSearchSource.contains("BasicTextField("))
+    }
+
+    @Test
     fun `miuix generic search bar does not auto expand before user interaction`() {
         val source = java.io.File("app/src/main/java/com/android/purebilibili/core/ui/components/iOSListComponents.kt")
             .takeIf { it.exists() }
@@ -254,12 +305,15 @@ class AdaptiveListComponentPolicyTest {
         val text = source.readText()
         val miuixSearchBarStart = text.indexOf("private fun MiuixAdaptiveSearchBar")
         assertTrue(miuixSearchBarStart >= 0)
-        val miuixSearchBarEnd = text.indexOf("\n}", miuixSearchBarStart).let { if (it < 0) text.length else it + 2 }
-        val miuixSearchBarBlock = text.substring(miuixSearchBarStart, miuixSearchBarEnd)
+        val collapsedPathStart = text.indexOf("var expanded by rememberSaveable(query.isNotBlank())", miuixSearchBarStart)
+        assertTrue(collapsedPathStart >= 0)
+        val collapsedPathEnd = text.indexOf("InputField(", collapsedPathStart)
+        assertTrue(collapsedPathEnd > collapsedPathStart)
+        val collapsedPathBlock = text.substring(collapsedPathStart, collapsedPathEnd)
 
-        assertTrue(miuixSearchBarBlock.contains("var expanded by rememberSaveable(query.isNotBlank())"))
-        assertTrue(miuixSearchBarBlock.contains("expanded = expanded || query.isNotBlank()"))
-        assertFalse(miuixSearchBarBlock.contains("expanded = true"))
+        assertTrue(collapsedPathBlock.contains("var expanded by rememberSaveable(query.isNotBlank())"))
+        assertTrue(text.substring(collapsedPathStart).contains("expanded = expanded || query.isNotBlank()"))
+        assertTrue(text.contains("forceExpandedInput"))
     }
 
     @Test

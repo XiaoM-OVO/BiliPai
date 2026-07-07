@@ -62,7 +62,6 @@ import com.android.purebilibili.core.theme.iOSOrange
 import com.android.purebilibili.core.theme.iOSPurple
 import com.android.purebilibili.core.theme.iOSTeal
 import com.android.purebilibili.feature.settings.SettingsLocalBackHandler
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.resolveBottomSafeAreaPadding
 import com.android.purebilibili.core.ui.components.AppAdaptiveSwitch
@@ -176,7 +175,6 @@ fun PluginsScreen(
         backContentDescription = backLabel,
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         PluginsContent(
             plugins = plugins,

@@ -1,6 +1,7 @@
 package com.android.purebilibili.core.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -25,11 +26,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
@@ -80,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.Switch as MiuixSwitch
 import top.yukonga.miuix.kmp.preference.ArrowPreference as MiuixArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference as MiuixSwitchPreference
 import top.yukonga.miuix.kmp.basic.InputField
+import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
 
@@ -586,6 +591,23 @@ fun IOSSectionTitle(title: String) {
     )
 }
 
+/**
+ * Continuous iOS corners do not compose cleanly with [Surface] borders; use standard arcs
+ * for bordered list groups so the stroke follows smooth quarter-circle corners.
+ */
+internal fun resolveIosGroupSurfaceShape(
+    uiPreset: UiPreset,
+    requestedShape: Shape?,
+    defaultShape: RoundedCornerShape,
+    border: BorderStroke?
+): Shape {
+    val resolved = requestedShape ?: defaultShape
+    if (border != null && uiPreset == UiPreset.IOS && resolved !is RoundedCornerShape) {
+        return defaultShape
+    }
+    return resolved
+}
+
 @Composable
 fun IOSGroup(
     modifier: Modifier = Modifier,
@@ -605,8 +627,14 @@ fun IOSGroup(
     }
     val groupCornerRadius = iOSCornerRadius.Medium * cornerRadiusScale
     val colorScheme = MaterialTheme.colorScheme
-    val appliedShape = shape ?: RoundedCornerShape(
+    val defaultShape = RoundedCornerShape(
         if (uiPreset == UiPreset.MD3) visualSpec.groupCornerRadiusDp.dp else groupCornerRadius
+    )
+    val appliedShape = resolveIosGroupSurfaceShape(
+        uiPreset = uiPreset,
+        requestedShape = shape,
+        defaultShape = defaultShape,
+        border = border
     )
     val resolvedContainerColor = resolveAdaptiveGroupContainerColor(
         uiPreset = uiPreset,
@@ -629,17 +657,15 @@ fun IOSGroup(
     }
     
     Surface(
-        modifier = modifier
-            .padding(
-                horizontal = if (uiPreset == UiPreset.MD3 && androidNativeVariant == AndroidNativeVariant.MIUIX) {
-                    14.dp
-                } else if (uiPreset == UiPreset.MD3) {
-                    12.dp
-                } else {
-                    16.dp
-                }
-            )
-            .clip(appliedShape),
+        modifier = modifier.padding(
+            horizontal = if (uiPreset == UiPreset.MD3 && androidNativeVariant == AndroidNativeVariant.MIUIX) {
+                14.dp
+            } else if (uiPreset == UiPreset.MD3) {
+                12.dp
+            } else {
+                16.dp
+            }
+        ),
         shape = appliedShape,
         color = resolvedContainerColor,
         shadowElevation = 0.dp,
@@ -1316,7 +1342,8 @@ fun IOSSearchBar(
     modifier: Modifier = Modifier,
     placeholder: String = "搜索",
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-    heightOverride: Dp? = null
+    heightOverride: Dp? = null,
+    forceExpandedInput: Boolean = false,
 ) {
     val uiPreset = LocalUiPreset.current
     val androidNativeVariant = LocalAndroidNativeVariant.current
@@ -1338,6 +1365,129 @@ fun IOSSearchBar(
     )
     val resolvedHeight = heightOverride ?: visualSpec.searchBarHeightDp.dp
 
+    if (forceExpandedInput) {
+        val focusRequester = remember { FocusRequester() }
+        LaunchedEffect(focusRequester) {
+            delay(80)
+            runCatching { focusRequester.requestFocus() }
+        }
+        if (shouldUseNativeMiuixSearchBar(uiPreset, androidNativeVariant)) {
+            MiuixAdaptiveSearchBar(
+                query = query,
+                onQueryChange = onQueryChange,
+                modifier = modifier.focusRequester(focusRequester),
+                placeholder = placeholder,
+                containerColor = resolvedContainerColor,
+                height = resolvedHeight,
+                forceExpandedInput = true,
+            )
+            return
+        }
+        if (uiPreset == UiPreset.MD3) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = modifier
+                    .fillMaxWidth()
+                    .heightIn(min = resolvedHeight)
+                    .focusRequester(focusRequester),
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+                trailingIcon = if (query.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+                shape = RoundedCornerShape(searchBarCornerRadius),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+                    focusedContainerColor = resolvedContainerColor,
+                    unfocusedContainerColor = resolvedContainerColor,
+                    disabledContainerColor = resolvedContainerColor,
+                ),
+            )
+            return
+        }
+        BasicTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(resolvedHeight)
+                .clip(RoundedCornerShape(searchBarCornerRadius))
+                .background(resolvedContainerColor)
+                .focusRequester(focusRequester),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+            singleLine = true,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            decorationBox = { innerTextField ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                ) {
+                    Icon(
+                        imageVector = CupertinoIcons.Default.MagnifyingGlass,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.weight(1f)) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        innerTextField()
+                    }
+                    if (query.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onQueryChange("") },
+                            modifier = Modifier.size(20.dp),
+                        ) {
+                            Icon(
+                                imageVector = CupertinoIcons.Default.XmarkCircle,
+                                contentDescription = "Clear",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+            },
+        )
+        return
+    }
+
     if (shouldUseNativeMiuixSearchBar(uiPreset, androidNativeVariant)) {
         MiuixAdaptiveSearchBar(
             query = query,
@@ -1345,7 +1495,8 @@ fun IOSSearchBar(
             modifier = modifier,
             placeholder = placeholder,
             containerColor = resolvedContainerColor,
-            height = resolvedHeight
+            height = resolvedHeight,
+            forceExpandedInput = forceExpandedInput,
         )
         return
     }
@@ -1466,8 +1617,23 @@ private fun MiuixAdaptiveSearchBar(
     modifier: Modifier,
     placeholder: String,
     @Suppress("UNUSED_PARAMETER") containerColor: Color,
-    height: androidx.compose.ui.unit.Dp
+    height: androidx.compose.ui.unit.Dp,
+    forceExpandedInput: Boolean = false,
 ) {
+    if (forceExpandedInput) {
+        InputField(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = {},
+            expanded = true,
+            onExpandedChange = {},
+            modifier = modifier
+                .fillMaxWidth()
+                .height(height),
+            label = placeholder,
+        )
+        return
+    }
     var expanded by rememberSaveable(query.isNotBlank()) {
         mutableStateOf(query.isNotBlank())
     }

@@ -34,7 +34,6 @@ import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_TRANSITION_CUSTOM_MAX_MILLIS
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_TRANSITION_CUSTOM_MIN_MILLIS
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionSpeed
@@ -77,7 +76,6 @@ fun AnimationSettingsScreen(
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
         topBarBlurEnabled = state.headerBlurEnabled,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         CompositionLocalProvider(LocalSettingsLiquidGlassEnabled provides state.isLiquidGlassEnabled) {
             AnimationSettingsContent(

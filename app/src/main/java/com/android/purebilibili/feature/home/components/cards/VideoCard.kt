@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -66,6 +67,7 @@ import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
+import com.android.purebilibili.core.ui.transition.LocalVideoCardTransitionBackgroundState
 import com.android.purebilibili.core.ui.transition.LocalVideoSharedTransitionSpeedSettings
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionVisualSpec
@@ -613,6 +615,15 @@ fun ElegantVideoCard(
         }
         val isCoverSharedReturnTarget = thisCardVideoSourceKey != null &&
             thisCardVideoSourceKey == CardPositionManager.lastClickedVideoSourceKey
+        val videoCardTransitionBackgroundState = LocalVideoCardTransitionBackgroundState.current
+        val hideCoverDuringShellMorph = shouldHideHomeCardCoverDuringShellMorph(
+            useCardContainerSharedBounds = useCardShellSharedBounds,
+            isSharedMorphSourceCard = isCoverSharedReturnTarget,
+            isReturningFromDetail = isReturningFromVideoDetail,
+            isSharedTransitionActive = sharedTransitionScope?.isTransitionActive == true,
+            transitionBackgroundPhase = videoCardTransitionBackgroundState.phaseProvider(),
+            isVideoCardReturnGestureInProgress = videoCardTransitionBackgroundState.isReturnGestureInProgressProvider(),
+        )
         val coverCrossfadeEnabled = shouldEnableVideoCardCoverCrossfade(
             isReturningFromDetail = isReturningFromVideoDetail,
             useCoverSharedBounds = useCardShellSharedBounds,
@@ -695,7 +706,11 @@ fun ElegantVideoCard(
                     .diskCacheKey(coverCacheKey)
                     .build(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = if (hideCoverDuringShellMorph) 0f else 1f
+                    },
                 contentScale = ContentScale.Crop
             )
 

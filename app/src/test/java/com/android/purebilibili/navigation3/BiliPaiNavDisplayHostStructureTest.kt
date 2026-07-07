@@ -156,6 +156,13 @@ class BiliPaiNavDisplayHostStructureTest {
     }
 
     @Test
+    fun navDisplayHostSuppressesOpeningBackgroundScaleDuringGestureRestore() {
+        val source = navDisplayHostSource()
+        assertTrue(source.contains("videoCardBackgroundGestureRestoreInProgress"))
+        assertTrue(source.contains("isGestureRestoreInProgressProvider"))
+    }
+
+    @Test
     fun navDisplayHostIntegratesPredictiveBackHandlerDecorator() {
         val source = navDisplayHostSource()
 
@@ -174,6 +181,18 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(source.contains("val popRouteTransition = remember("))
         assertTrue(source.contains("resolveBiliPaiPredictiveBackAnimationHandler"))
         assertFalse(source.contains("resolveBiliPaiNavPopContentTransform(popRouteTransition)"))
+    }
+
+    @Test
+    fun navDisplayHostLayersVideoCardTransitionNavBackdropBehindNavDisplay() {
+        val source = navDisplayHostSource()
+
+        assertTrue(source.contains("VideoCardTransitionNavBackdrop("))
+        assertTrue(source.contains("shouldShowVideoCardTransitionNavBackdrop"))
+        assertTrue(source.contains("Box(modifier = modifier.fillMaxSize())"))
+        val boxBlock = source.substringAfter("Box(modifier = modifier.fillMaxSize())")
+            .substringBefore("}\n}\n\n@Composable\nprivate fun ProvideNavigation3ViewModelApplicationExtras")
+        assertTrue(boxBlock.indexOf("VideoCardTransitionNavBackdrop") < boxBlock.indexOf("NavDisplay("))
     }
 
     private fun navDisplayHostSource(): String {

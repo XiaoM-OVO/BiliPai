@@ -1354,6 +1354,7 @@ fun AppNavigation(
                                         modifier.videoCardTransitionBackgroundEffect(
                                             progressProvider = backgroundState.progressProvider,
                                             phaseProvider = backgroundState.phaseProvider,
+                                            isGestureRestoreInProgressProvider = backgroundState.isGestureRestoreInProgressProvider,
                                             motionTierProvider = backgroundState.motionTierProvider,
                                             isLightBackgroundProvider = backgroundState.isLightBackgroundProvider,
                                         )

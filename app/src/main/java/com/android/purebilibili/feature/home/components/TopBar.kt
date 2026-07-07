@@ -494,7 +494,7 @@ fun FluidHomeTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            shape = AppShapes.container(ContainerLevel.Floating),
+            shape = AppShapes.borderedContainer(ContainerLevel.Floating),
             color = AppSurfaceTokens.cardContainer(),  //  使用预设感知表面色，适配深色模式
             shadowElevation = 6.dp,  // 添加阴影增加层次感
             tonalElevation = 0.dp,

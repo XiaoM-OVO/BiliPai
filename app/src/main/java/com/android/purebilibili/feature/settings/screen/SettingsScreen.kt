@@ -1224,15 +1224,6 @@ private fun MobileSettingsNavLayout(
         onBack = onBack,
         backContentDescription = backLabel,
         bottomContentPadding = bottomInset,
-        header = if (destination is SettingsNavDestination.Home) {
-            {
-                com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader(
-                    title = stringResource(R.string.settings_title),
-                )
-            }
-        } else {
-            null
-        },
     ) {
         EntranceGroup(startWhen = true) {
             when (destination) {

@@ -49,7 +49,6 @@ import com.android.purebilibili.core.theme.iOSGreen
 import com.android.purebilibili.core.theme.iOSOrange
 import com.android.purebilibili.core.theme.iOSPink
 import com.android.purebilibili.feature.settings.SettingsPageScrollHost
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.IOSAlertDialog
 import com.android.purebilibili.core.ui.IOSDialogAction
@@ -107,7 +106,6 @@ fun WebDavBackupScreen(
         backContentDescription = backLabel,
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
         actions = {
             IconButton(onClick = { viewModel.refreshRemoteBackups() }) {
                 Icon(

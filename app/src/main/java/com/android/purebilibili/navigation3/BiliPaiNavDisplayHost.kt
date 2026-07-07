@@ -58,6 +58,8 @@ import com.android.purebilibili.core.ui.transition.resolveVideoCardTransitionBac
 import com.android.purebilibili.core.ui.transition.resolveVideoCardTransitionBackgroundReturnDurationMs
 import com.android.purebilibili.core.ui.transition.isVideoCardTransitionBackgroundGesturePhase
 import com.android.purebilibili.core.ui.transition.shouldApplyPredictiveBackGestureBlur
+import com.android.purebilibili.core.ui.transition.shouldShowVideoCardTransitionNavBackdrop
+import com.android.purebilibili.core.ui.transition.VideoCardTransitionNavBackdrop
 import com.android.purebilibili.navigation.isVideoCardReturnTargetRoute
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationHandler
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationStyle
@@ -95,6 +97,8 @@ internal fun BiliPaiNavDisplayHost(
     var videoCardTransitionBackgroundPhase by remember {
         mutableStateOf(VideoCardTransitionBackgroundPhase.IDLE)
     }
+    var videoCardReturnGestureInProgress by remember { mutableStateOf(false) }
+    var videoCardBackgroundGestureRestoreInProgress by remember { mutableStateOf(false) }
     // 系统减弱动画(省电/无障碍/开发者选项)时，过渡背景降级为仅 scrim，跳过全屏 GPU 实时模糊。
     val transitionBackgroundMotionTier =
         if (rememberSystemReduceMotion()) MotionTier.Reduced else MotionTier.Normal
@@ -298,6 +302,12 @@ internal fun BiliPaiNavDisplayHost(
                             phaseProvider = {
                                 videoCardTransitionBackgroundPhase
                             },
+                            isReturnGestureInProgressProvider = {
+                                videoCardReturnGestureInProgress
+                            },
+                            isGestureRestoreInProgressProvider = {
+                                videoCardBackgroundGestureRestoreInProgress
+                            },
                             motionTierProvider = {
                                 transitionBackgroundMotionTier
                             },
@@ -398,6 +408,9 @@ internal fun BiliPaiNavDisplayHost(
         currentBackKey is BiliPaiNavKey.VideoDetail &&
         targetBackKey != null &&
         isVideoCardReturnTargetRoute(sourceMetadata.sourceRoute)
+    SideEffect {
+        videoCardReturnGestureInProgress = gestureReturningVideoCard && inProgressState != null
+    }
     val gestureBackgroundBlurTarget: Float? =
         if (gestureReturningVideoCard && nativeVideoBackProgress != null) {
             resolveVideoCardTransitionBackgroundGestureBlurProgress(
@@ -446,13 +459,18 @@ internal fun BiliPaiNavDisplayHost(
                 videoCardTransitionBackgroundProgress.value < 1f
             ) {
                 navigationScope.launch {
-                    videoCardTransitionBackgroundProgress.animateTo(
-                        targetValue = 1f,
-                        animationSpec = tween(
-                            durationMillis = VIDEO_CARD_TRANSITION_BACKGROUND_CANCEL_DURATION_MS,
-                            easing = FastOutLinearInEasing
+                    videoCardBackgroundGestureRestoreInProgress = true
+                    try {
+                        videoCardTransitionBackgroundProgress.animateTo(
+                            targetValue = 1f,
+                            animationSpec = tween(
+                                durationMillis = VIDEO_CARD_TRANSITION_BACKGROUND_CANCEL_DURATION_MS,
+                                easing = FastOutLinearInEasing
+                            )
                         )
-                    )
+                    } finally {
+                        videoCardBackgroundGestureRestoreInProgress = false
+                    }
                 }
             }
             if (predictiveBackGestureBlurEnabled &&
@@ -472,29 +490,43 @@ internal fun BiliPaiNavDisplayHost(
         },
     )
 
-    NavDisplay(
-        sceneState = sceneState,
-        navigationEventState = navigationEventState,
-        modifier = modifier,
-        contentAlignment = Alignment.TopStart,
-        sizeTransform = null,
-        transitionEffects = NavDisplayTransitionEffects(blockInputDuringTransition = true),
-        transitionSpec = {
-            with(predictiveBackHandler) {
-                onTransitionSpec()
-            }
-        },
-        popTransitionSpec = {
-            with(predictiveBackHandler) {
-                onPopTransitionSpec()
-            }
-        },
-        predictivePopTransitionSpec = { swipeEdge ->
-            with(predictiveBackHandler) {
-                onPredictivePopTransitionSpec(swipeEdge = swipeEdge)
-            }
-        },
+    val showVideoCardNavBackdrop = shouldShowVideoCardTransitionNavBackdrop(
+        cardTransitionEnabled = cardTransitionEnabled,
+        phase = videoCardTransitionBackgroundPhase,
+        isVideoDetailOnStack = currentBackKey is BiliPaiNavKey.VideoDetail,
     )
+
+    Box(modifier = modifier.fillMaxSize()) {
+        VideoCardTransitionNavBackdrop(
+            visible = showVideoCardNavBackdrop,
+            progress = videoCardTransitionBackgroundProgress.value,
+            phase = videoCardTransitionBackgroundPhase,
+            isLightBackground = isLightBackground,
+        )
+        NavDisplay(
+            sceneState = sceneState,
+            navigationEventState = navigationEventState,
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopStart,
+            sizeTransform = null,
+            transitionEffects = NavDisplayTransitionEffects(blockInputDuringTransition = true),
+            transitionSpec = {
+                with(predictiveBackHandler) {
+                    onTransitionSpec()
+                }
+            },
+            popTransitionSpec = {
+                with(predictiveBackHandler) {
+                    onPopTransitionSpec()
+                }
+            },
+            predictivePopTransitionSpec = { swipeEdge ->
+                with(predictiveBackHandler) {
+                    onPredictivePopTransitionSpec(swipeEdge = swipeEdge)
+                }
+            },
+        )
+    }
 }
 
 @Composable

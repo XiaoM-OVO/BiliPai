@@ -19,7 +19,6 @@ import com.android.purebilibili.core.plugin.json.JsonPluginManager
 import com.android.purebilibili.core.plugin.json.JsonRulePlugin
 import com.android.purebilibili.core.plugin.json.Rule
 import com.android.purebilibili.core.theme.iOSBlue
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.components.IOSAdaptiveTextField
 import com.android.purebilibili.core.ui.AppShapes
@@ -49,7 +48,6 @@ fun JsonPluginEditorScreen(
         backContentDescription = "返回",
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
         actions = {
             IconButton(onClick = {
                 val updated = plugin.copy(

@@ -64,7 +64,6 @@ import com.android.purebilibili.core.ui.blur.shouldAllowHomeChromeLiquidGlass
 import com.android.purebilibili.core.ui.getWindowNavigationBarColor
 import com.android.purebilibili.core.ui.rememberAppSparklesIcon
 import com.android.purebilibili.core.ui.setWindowNavigationBarColor
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.util.HapticType
 import com.android.purebilibili.core.util.LocalWindowSizeClass
@@ -140,7 +139,6 @@ fun AppearanceSettingsScreen(
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
         topBarBlurEnabled = state.headerBlurEnabled,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         CompositionLocalProvider(LocalSettingsLiquidGlassEnabled provides state.isLiquidGlassEnabled) {
             AppearanceSettingsContent(
@@ -700,7 +698,7 @@ fun AppearanceSettingsContent(
                                         .border(
                                             width = 1.dp,
                                             color = selectedCustomThemeColor.copy(alpha = 0.3f),
-                                            shape = AppShapes.container(ContainerLevel.Sheet)
+                                            shape = AppShapes.borderedContainer(ContainerLevel.Sheet)
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -2146,7 +2144,7 @@ private fun AppearanceUiPresetDescriptionCard(
     val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
 
     Surface(
-        shape = AppShapes.container(ContainerLevel.Dialog),
+        shape = AppShapes.borderedContainer(ContainerLevel.Dialog),
         color = containerColor,
         contentColor = contentColor,
         tonalElevation = 0.dp,

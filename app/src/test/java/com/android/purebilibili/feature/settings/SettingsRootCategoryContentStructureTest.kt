@@ -211,7 +211,7 @@ class SettingsRootCategoryContentStructureTest {
         ).first { it.exists() }.readText()
 
         assertTrue(source.contains("SettingsPageScaffold("))
-        assertTrue(source.contains("SettingsLargeTitleHeader("))
+        assertFalse(source.contains("SettingsLargeTitleHeader("))
         assertFalse(source.contains("AdaptiveScaffold("))
     }
 

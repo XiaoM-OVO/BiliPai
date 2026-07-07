@@ -111,6 +111,16 @@ class AppShapesTest {
     }
 
     @Test
+    fun iosBorderedContainerShape_usesRoundedCornerShape() {
+        val shape = AppShapes.resolveBorderedContainerShape(
+            level = ContainerLevel.Dialog,
+            uiPreset = UiPreset.IOS,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3
+        )
+        assertIs<RoundedCornerShape>(shape)
+    }
+
+    @Test
     fun iosContainerShape_usesContinuousCornerImplementation() {
         val shape = AppShapes.resolveContainerShape(
             level = ContainerLevel.Card,

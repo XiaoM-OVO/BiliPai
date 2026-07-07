@@ -515,28 +515,28 @@ class PortraitPagerSwitchPolicyTest {
             shouldRecoverPortraitPagerSurfaceOnResume(
                 isCurrentPage = true,
                 isPlayerReadyForThisVideo = true,
-                hasPlayerSurface = true
+                hasPlayerView = true
             )
         )
         assertFalse(
             shouldRecoverPortraitPagerSurfaceOnResume(
                 isCurrentPage = false,
                 isPlayerReadyForThisVideo = true,
-                hasPlayerSurface = true
+                hasPlayerView = true
             )
         )
         assertFalse(
             shouldRecoverPortraitPagerSurfaceOnResume(
                 isCurrentPage = true,
                 isPlayerReadyForThisVideo = false,
-                hasPlayerSurface = true
+                hasPlayerView = true
             )
         )
         assertFalse(
             shouldRecoverPortraitPagerSurfaceOnResume(
                 isCurrentPage = true,
                 isPlayerReadyForThisVideo = true,
-                hasPlayerSurface = false
+                hasPlayerView = false
             )
         )
     }

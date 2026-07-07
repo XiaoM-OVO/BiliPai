@@ -46,7 +46,6 @@ import com.android.purebilibili.core.theme.iOSOrange
 import com.android.purebilibili.core.theme.iOSSystemGray
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.util.LocalWindowSizeClass
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.store.TokenManager
 import com.android.purebilibili.feature.screenshot.AppScreenshotCaptureMode
@@ -81,7 +80,6 @@ fun PlaybackSettingsScreen(
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
         topBarBlurEnabled = state.headerBlurEnabled,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         CompositionLocalProvider(LocalSettingsLiquidGlassEnabled provides state.isLiquidGlassEnabled) {
             PlaybackSettingsContent(viewModel = viewModel, state = state)

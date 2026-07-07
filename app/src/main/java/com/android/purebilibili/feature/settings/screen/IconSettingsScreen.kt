@@ -38,7 +38,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.purebilibili.R
 import com.android.purebilibili.core.theme.*
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.ui.resolveBottomSafeAreaPadding
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
@@ -105,7 +104,6 @@ fun IconSettingsScreen(
         backContentDescription = backLabel,
         bottomContentPadding = bottomContentPadding,
         scrollHost = SettingsPageScrollHost.External,
-        header = { SettingsLargeTitleHeader(title = screenTitle) },
     ) {
         IconSettingsContent(
             state = state,

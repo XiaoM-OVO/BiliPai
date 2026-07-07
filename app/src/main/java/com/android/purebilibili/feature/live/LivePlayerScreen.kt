@@ -7,7 +7,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.view.View
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.core.view.WindowCompat
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,6 +62,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
 import com.android.purebilibili.core.util.Logger
 import com.android.purebilibili.core.util.AnalyticsHelper
 import com.android.purebilibili.core.util.CrashReporter
@@ -83,9 +87,7 @@ import com.android.purebilibili.feature.video.player.shouldContinuePlaybackDurin
 import com.android.purebilibili.feature.video.state.isPlaybackActiveForLifecycle
 import com.android.purebilibili.feature.video.state.shouldResumeAfterLifecyclePause
 import com.android.purebilibili.feature.video.ui.overlay.shouldRebindFullscreenSurfaceOnResume
-import com.android.purebilibili.feature.video.ui.section.rebindVideoSurfaceViewIfNeeded
-import com.android.purebilibili.feature.video.ui.section.resolveVideoPlayerScalingMode
-import com.android.purebilibili.feature.video.ui.section.VideoPlayerSurfacePresentationHost
+import com.android.purebilibili.feature.video.ui.section.rebindPlayerSurfaceIfNeeded
 import com.android.purebilibili.feature.video.ui.section.shouldKickPlaybackAfterSurfaceRecovery
 import com.android.purebilibili.feature.video.ui.overlay.LiveDanmakuOverlay
 import com.android.purebilibili.feature.video.ui.components.VideoAspectRatio
@@ -158,7 +160,7 @@ fun LivePlayerScreen(
     var selectedInteractionTab by remember { mutableIntStateOf(0) }
     var isPipRequested by remember { mutableStateOf(false) }
     var wasPlaybackActiveBeforePause by remember { mutableStateOf(false) }
-    var videoSurfaceRef by remember { mutableStateOf<View?>(null) }
+    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var trackSelectionBeforeAudioOnly by remember { mutableStateOf<TrackSelectionParameters?>(null) }
     var videoAspectRatio by remember { mutableStateOf(VideoAspectRatio.FIT) }
     var backgroundPlaybackEnabled by remember {
@@ -419,6 +421,7 @@ fun LivePlayerScreen(
                 isAudioOnly = true
             )
             exoPlayer.clearVideoSurface()
+            playerViewRef?.player = null
             CrashReporter.markLivePlaybackStage("audio_only_video_disabled")
         } else {
             trackSelectionBeforeAudioOnly?.let { originalParams ->
@@ -426,6 +429,7 @@ fun LivePlayerScreen(
                 trackSelectionBeforeAudioOnly = null
                 CrashReporter.markLivePlaybackStage("audio_only_video_restored")
             }
+            playerViewRef?.player = exoPlayer
         }
     }
 
@@ -600,14 +604,14 @@ fun LivePlayerScreen(
                         playbackState = exoPlayer.playbackState
                     )
                     Logger.d(TAG, "ON_RESUME live policy: shouldResume=$shouldResumePlayback")
-                    val surfaceView = videoSurfaceRef
+                    val view = playerViewRef
                     if (!currentIsLiveAudioOnly && shouldRebindFullscreenSurfaceOnResume(
-                            hasPlayerSurface = surfaceView != null,
+                            hasPlayerView = view != null,
                             hasPlayer = true
                         )
                     ) {
-                        rebindVideoSurfaceViewIfNeeded(
-                            surfaceView = surfaceView,
+                        rebindPlayerSurfaceIfNeeded(
+                            playerView = view!!,
                             player = exoPlayer
                         )
                         Logger.d(TAG, "🎬 ON_RESUME live surface rebind applied")
@@ -634,7 +638,7 @@ fun LivePlayerScreen(
         
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            videoSurfaceRef = null
+            playerViewRef = null
             // 📺 [修改] 仅当 MiniPlayerManager 未持有该播放器时才释放
             if (!miniPlayerManager.isPlayerManaged(exoPlayer)) {
                 exoPlayer.release()
@@ -718,23 +722,29 @@ fun LivePlayerScreen(
                     )
                 }
 
-                val boundPlayer = if (shouldBindLivePlayerViewForAudioOnly(isLiveAudioOnly)) {
-                    exoPlayer
-                } else {
-                    null
-                }
-                val scalingMode = resolveVideoPlayerScalingMode(viewportAspectRatio)
-                SideEffect {
-                    if (boundPlayer != null && boundPlayer.videoScalingMode != scalingMode) {
-                        boundPlayer.videoScalingMode = scalingMode
-                    }
-                }
-
-                VideoPlayerSurfacePresentationHost(
-                    player = boundPlayer,
-                    modifier = viewportModifier,
-                    useTextureSurface = useTextureSurfaceForLivePlayer,
-                    onSurfaceViewChanged = { videoSurfaceRef = it },
+                AndroidView(
+                    factory = { ctx ->
+                        val livePlayerView = if (useTextureSurfaceForLivePlayer) {
+                            LayoutInflater.from(ctx)
+                                .inflate(com.android.purebilibili.R.layout.view_player_texture, null, false) as PlayerView
+                        } else {
+                            PlayerView(ctx)
+                        }
+                        livePlayerView.apply {
+                            player = if (shouldBindLivePlayerViewForAudioOnly(isLiveAudioOnly)) exoPlayer else null
+                            useController = false
+                            resizeMode = viewportAspectRatio.playerResizeMode
+                            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        }
+                    },
+                    update = { playerView ->
+                        playerView.player = if (shouldBindLivePlayerViewForAudioOnly(isLiveAudioOnly)) exoPlayer else null
+                        if (playerView.resizeMode != viewportAspectRatio.playerResizeMode) {
+                            playerView.resizeMode = viewportAspectRatio.playerResizeMode
+                        }
+                        playerViewRef = playerView
+                    },
+                    modifier = viewportModifier
                 )
             }
             

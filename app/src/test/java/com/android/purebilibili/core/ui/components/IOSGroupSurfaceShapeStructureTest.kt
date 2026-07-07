@@ -2,6 +2,7 @@ package com.android.purebilibili.core.ui.components
 
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class IOSGroupSurfaceShapeStructureTest {
@@ -13,7 +14,8 @@ class IOSGroupSurfaceShapeStructureTest {
             .substringAfter("fun IOSGroup(")
             .substringBefore("@Composable\nfun IOSSwitchItem")
 
-        assertTrue(iosGroupSource.contains(".clip(appliedShape)"))
+        assertFalse(iosGroupSource.contains(".clip(appliedShape)"))
+        assertTrue(iosGroupSource.contains("resolveIosGroupSurfaceShape("))
         assertTrue(iosGroupSource.contains("Surface("))
         assertTrue(iosGroupSource.contains("shape = appliedShape,"))
     }

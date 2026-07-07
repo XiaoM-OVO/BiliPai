@@ -346,12 +346,11 @@ private fun ExternalPlaylistQueueCollapsedBar(
     hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
-    val shape = AppShapes.container(ContainerLevel.Dialog)
+    val shape = AppShapes.borderedContainer(ContainerLevel.Dialog)
     val useHazeEffect = shouldAllowRuntimeShaderBackedHazeEffect(Build.VERSION.SDK_INT)
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
             .then(
                 if (useHazeEffect) {
                     Modifier.hazeEffect(

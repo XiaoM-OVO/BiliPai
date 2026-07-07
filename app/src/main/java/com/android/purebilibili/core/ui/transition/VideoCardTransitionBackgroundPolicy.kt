@@ -7,6 +7,8 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import com.android.purebilibili.core.ui.adaptive.MotionTier
@@ -48,6 +50,8 @@ internal data class VideoCardTransitionBackgroundState(
     val phaseProvider: () -> VideoCardTransitionBackgroundPhase = {
         VideoCardTransitionBackgroundPhase.IDLE
     },
+    val isReturnGestureInProgressProvider: () -> Boolean = { false },
+    val isGestureRestoreInProgressProvider: () -> Boolean = { false },
     val motionTierProvider: () -> MotionTier = { MotionTier.Normal },
     val isLightBackgroundProvider: () -> Boolean = { false },
 )
@@ -85,17 +89,29 @@ internal fun resolveVideoCardTransitionReturningScrimAlpha(
     return maxAlpha * blurStrength
 }
 
+internal fun resolveVideoCardTransitionOpeningContentScale(
+    progress: Float,
+    phase: VideoCardTransitionBackgroundPhase,
+    isGestureRestoreInProgress: Boolean,
+): Float {
+    if (phase != VideoCardTransitionBackgroundPhase.OPENING || isGestureRestoreInProgress) {
+        return 1f
+    }
+    val clamped = progress.coerceIn(0f, 1f)
+    return 1f - VIDEO_CARD_TRANSITION_MAX_CONTENT_SCALE_REDUCTION * clamped
+}
+
 internal fun resolveVideoCardTransitionBackgroundFrame(
     progress: Float,
     phase: VideoCardTransitionBackgroundPhase,
     motionTier: MotionTier = MotionTier.Normal,
     isLightBackground: Boolean = false,
+    isGestureRestoreInProgress: Boolean = false,
     sdkInt: Int = Build.VERSION.SDK_INT,
 ): VideoCardTransitionBackgroundFrame {
     val clamped = progress.coerceIn(0f, 1f)
     val blurStrength = resolveVideoCardTransitionBlurStrength(clamped)
-    // 低端/省电/无障碍减弱动画(Reduced)时跳过整帧 GPU 实时模糊，
-    // 仅保留 scrim + 轻微缩放作为回退，避免全屏 RenderEffect 的开销。
+    // 低端/省电/无障碍减弱动画(Reduced)时跳过整帧 GPU 实时模糊，仅保留 scrim + 轻微缩放作为回退。
     val rawBlurRadiusPx = if (
         phase != VideoCardTransitionBackgroundPhase.IDLE &&
         // RETURNING 时首页层已含回收中的共享元素卡片，全屏 blur 会让落位封面发糊。
@@ -121,13 +137,11 @@ internal fun resolveVideoCardTransitionBackgroundFrame(
             VideoCardTransitionBackgroundPhase.IDLE,
             VideoCardTransitionBackgroundPhase.HELD -> 0f
         },
-        contentScale = when (phase) {
-            VideoCardTransitionBackgroundPhase.OPENING ->
-                1f - VIDEO_CARD_TRANSITION_MAX_CONTENT_SCALE_REDUCTION * clamped
-            VideoCardTransitionBackgroundPhase.IDLE,
-            VideoCardTransitionBackgroundPhase.HELD,
-            VideoCardTransitionBackgroundPhase.RETURNING -> 1f
-        },
+        contentScale = resolveVideoCardTransitionOpeningContentScale(
+            progress = clamped,
+            phase = phase,
+            isGestureRestoreInProgress = isGestureRestoreInProgress,
+        ),
         useLightScrimTint = isLightBackground,
     )
 }
@@ -210,6 +224,71 @@ internal fun shouldApplyVideoCardTransitionBackgroundToRoute(
 }
 
 /**
+ * 视频卡片过渡期间 Nav 层全屏 backdrop：填补 sharedBounds morph / 预测式返回
+ * 在屏幕边缘露出的窗口底色，视觉上延续首页虚化后的色调。
+ */
+internal data class VideoCardTransitionNavBackdropFrame(
+    val scrimAlpha: Float,
+    val useLightScrimTint: Boolean,
+)
+
+internal fun shouldShowVideoCardTransitionNavBackdrop(
+    cardTransitionEnabled: Boolean,
+    phase: VideoCardTransitionBackgroundPhase,
+    isVideoDetailOnStack: Boolean,
+): Boolean {
+    if (!cardTransitionEnabled || !isVideoDetailOnStack) return false
+    return phase == VideoCardTransitionBackgroundPhase.HELD ||
+        phase == VideoCardTransitionBackgroundPhase.OPENING
+}
+
+internal fun resolveVideoCardTransitionNavBackdropFrame(
+    progress: Float,
+    phase: VideoCardTransitionBackgroundPhase,
+    isLightBackground: Boolean,
+): VideoCardTransitionNavBackdropFrame {
+    val clamped = progress.coerceIn(0f, 1f)
+    val blurStrength = resolveVideoCardTransitionBlurStrength(clamped)
+    val scrimAlpha = when (phase) {
+        VideoCardTransitionBackgroundPhase.OPENING ->
+            resolveVideoCardTransitionOpeningScrimAlpha(
+                progress = clamped,
+                isLightBackground = isLightBackground,
+                motionTier = MotionTier.Normal,
+            )
+        VideoCardTransitionBackgroundPhase.HELD -> {
+            if (isLightBackground) {
+                VIDEO_CARD_TRANSITION_MAX_SCRIM_ALPHA_LIGHT * blurStrength
+            } else {
+                VIDEO_CARD_TRANSITION_MAX_SCRIM_ALPHA_DARK * blurStrength
+            }
+        }
+        else -> 0f
+    }
+    return VideoCardTransitionNavBackdropFrame(
+        scrimAlpha = scrimAlpha,
+        useLightScrimTint = isLightBackground,
+    )
+}
+
+internal fun resolveVideoCardTransitionNavBackdropColor(
+    baseBackgroundColor: Color,
+    frame: VideoCardTransitionNavBackdropFrame,
+): Color {
+    if (frame.scrimAlpha <= 0.001f) return baseBackgroundColor
+    val tint = if (frame.useLightScrimTint) {
+        VIDEO_CARD_TRANSITION_LIGHT_SCRIM_TINT
+    } else {
+        Color.Black
+    }
+    return lerp(
+        start = baseBackgroundColor,
+        stop = tint,
+        fraction = frame.scrimAlpha.coerceIn(0f, 1f),
+    )
+}
+
+/**
  * 每帧内 graphicsLayer 与 drawWithContent 会先后读取同一 frame，
  * 用一个基于 (progress, phase) 的一次性缓存避免同帧重复计算纯函数。
  */
@@ -218,6 +297,7 @@ private class VideoCardTransitionBackgroundFrameCache {
     private var lastPhase: VideoCardTransitionBackgroundPhase? = null
     private var lastMotionTier: MotionTier? = null
     private var lastIsLightBackground: Boolean? = null
+    private var lastGestureRestoreInProgress: Boolean? = null
     private var cached = VideoCardTransitionBackgroundFrame(
         blurRadiusPx = 0f,
         scrimAlpha = 0f,
@@ -229,22 +309,26 @@ private class VideoCardTransitionBackgroundFrameCache {
         phase: VideoCardTransitionBackgroundPhase,
         motionTier: MotionTier,
         isLightBackground: Boolean,
+        isGestureRestoreInProgress: Boolean,
     ): VideoCardTransitionBackgroundFrame {
         if (
             progress != lastProgress ||
             phase != lastPhase ||
             motionTier != lastMotionTier ||
-            isLightBackground != lastIsLightBackground
+            isLightBackground != lastIsLightBackground ||
+            isGestureRestoreInProgress != lastGestureRestoreInProgress
         ) {
             lastProgress = progress
             lastPhase = phase
             lastMotionTier = motionTier
             lastIsLightBackground = isLightBackground
+            lastGestureRestoreInProgress = isGestureRestoreInProgress
             cached = resolveVideoCardTransitionBackgroundFrame(
                 progress = progress,
                 phase = phase,
                 motionTier = motionTier,
                 isLightBackground = isLightBackground,
+                isGestureRestoreInProgress = isGestureRestoreInProgress,
             )
         }
         return cached
@@ -254,6 +338,7 @@ private class VideoCardTransitionBackgroundFrameCache {
 internal fun Modifier.videoCardTransitionBackgroundEffect(
     progressProvider: () -> Float,
     phaseProvider: () -> VideoCardTransitionBackgroundPhase,
+    isGestureRestoreInProgressProvider: () -> Boolean = { false },
     motionTierProvider: () -> MotionTier = { MotionTier.Normal },
     isLightBackgroundProvider: () -> Boolean = { false },
 ): Modifier {
@@ -264,7 +349,10 @@ internal fun Modifier.videoCardTransitionBackgroundEffect(
             phaseProvider(),
             motionTierProvider(),
             isLightBackgroundProvider(),
+            isGestureRestoreInProgressProvider(),
         )
+        transformOrigin = TransformOrigin(0.5f, 0.5f)
+        translationX = 0f
         scaleX = frame.contentScale
         scaleY = frame.contentScale
         renderEffect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && frame.blurRadiusPx > 0.01f) {
@@ -285,6 +373,7 @@ internal fun Modifier.videoCardTransitionBackgroundEffect(
             phaseProvider(),
             motionTierProvider(),
             isLightBackgroundProvider(),
+            isGestureRestoreInProgressProvider(),
         )
         if (frame.scrimAlpha > 0.001f) {
             val scrimColor = if (frame.useLightScrimTint) {
@@ -299,7 +388,7 @@ internal fun Modifier.videoCardTransitionBackgroundEffect(
 
 private fun resolveVideoCardTransitionBlurStrength(progress: Float): Float {
     val clamped = progress.coerceIn(0f, 1f)
-    // 模糊要比位移/缩放更早进入可感知区，否则 160ms 内肉眼很难看出背景虚化。
+    // 模糊要比 scrim 更早进入可感知区，否则 160ms 内肉眼很难看出背景虚化。
     return 1f - (1f - clamped) * (1f - clamped)
 }
 

@@ -37,7 +37,6 @@ import com.android.purebilibili.R
 import com.android.purebilibili.core.ui.components.*
 import com.android.purebilibili.core.ui.animation.EntranceGroup
 import com.android.purebilibili.core.ui.animation.entrance
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.theme.iOSPink  // 存储权限图标色
 import com.android.purebilibili.core.theme.iOSBlue
@@ -69,7 +68,6 @@ fun PermissionSettingsScreen(
             onBack = onBack,
             backContentDescription = backLabel,
             bottomContentPadding = bottomPadding,
-            header = { SettingsLargeTitleHeader(title = screenTitle) },
         ) {
             PermissionSettingsContent()
         }

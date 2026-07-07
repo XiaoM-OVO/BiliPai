@@ -27,7 +27,6 @@ import com.android.purebilibili.core.ui.animation.EntranceGroup
 import com.android.purebilibili.core.ui.animation.entrance
 import com.android.purebilibili.core.ui.components.rememberAdaptiveSemanticIconTint
 import com.android.purebilibili.core.ui.components.IOSSectionTitle
-import com.android.purebilibili.feature.settings.ui.SettingsLargeTitleHeader
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.filled.*
@@ -145,7 +144,6 @@ fun TipsSettingsScreen(
             onBack = onBack,
             backContentDescription = backLabel,
             bottomContentPadding = contentBottomPadding,
-            header = { SettingsLargeTitleHeader(title = screenTitle) },
             lazyListContent = {
             item {
                 Box(modifier = Modifier.entrance()) {

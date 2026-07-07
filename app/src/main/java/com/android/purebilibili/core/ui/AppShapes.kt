@@ -88,8 +88,33 @@ object AppShapes {
         }
     }
 
+    /**
+     * Shape for containers that draw a stroke via [androidx.compose.foundation.BorderStroke] or
+     * [androidx.compose.foundation.border]. Material3 borders follow [RoundedCornerShape]
+     * reliably; iOS continuous corners render as chamfered edges.
+     */
+    fun resolveBorderedContainerShape(
+        level: ContainerLevel,
+        uiPreset: UiPreset,
+        androidNativeVariant: AndroidNativeVariant
+    ): Shape {
+        val dp = resolveContainerCornerDp(level, uiPreset, androidNativeVariant)
+        return if (level == ContainerLevel.Sheet) {
+            RoundedCornerShape(topStart = dp, topEnd = dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+        } else {
+            RoundedCornerShape(dp)
+        }
+    }
+
     @Composable
     fun container(level: ContainerLevel): Shape = resolveContainerShape(
+        level = level,
+        uiPreset = LocalUiPreset.current,
+        androidNativeVariant = LocalAndroidNativeVariant.current
+    )
+
+    @Composable
+    fun borderedContainer(level: ContainerLevel): Shape = resolveBorderedContainerShape(
         level = level,
         uiPreset = LocalUiPreset.current,
         androidNativeVariant = LocalAndroidNativeVariant.current

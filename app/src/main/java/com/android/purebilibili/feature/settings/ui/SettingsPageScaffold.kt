@@ -17,12 +17,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.purebilibili.core.ui.AdaptiveScaffold
 import com.android.purebilibili.core.ui.AdaptiveTopAppBar
@@ -34,7 +32,6 @@ import com.android.purebilibili.core.ui.blur.hazeSourceCompat
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.feature.settings.SettingsPageScrollHost
-import com.android.purebilibili.feature.settings.resolveSettingsVisualSpec
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,26 +132,4 @@ internal fun SettingsPageScaffold(
             }
         }
     }
-}
-
-@Composable
-internal fun SettingsLargeTitleHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    val visualSpec = resolveSettingsVisualSpec()
-    Text(
-        text = title,
-        style = MaterialTheme.typography.headlineLarge.copy(
-            fontSize = visualSpec.largeTitleFontSize,
-            fontWeight = FontWeight.Bold,
-        ),
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier.padding(
-            start = visualSpec.screenHorizontalPadding,
-            end = visualSpec.screenHorizontalPadding,
-            top = 4.dp,
-            bottom = visualSpec.largeTitleBottomPadding,
-        ),
-    )
 }
