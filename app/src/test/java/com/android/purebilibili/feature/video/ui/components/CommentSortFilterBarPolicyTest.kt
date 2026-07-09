@@ -13,8 +13,8 @@ class CommentSortFilterBarPolicyTest {
         val spec = resolveCommentSortSegmentedControlSpec(itemCount = 2)
 
         assertEquals(66, spec.itemWidthDp)
-        assertEquals(44, spec.heightDp)
-        assertEquals(30, spec.indicatorHeightDp)
+        assertEquals(40, spec.heightDp)
+        assertEquals(27, spec.indicatorHeightDp)
         assertTrue(
             hasCommentSortIndicatorScaleClearance(
                 containerHeightDp = spec.heightDp,

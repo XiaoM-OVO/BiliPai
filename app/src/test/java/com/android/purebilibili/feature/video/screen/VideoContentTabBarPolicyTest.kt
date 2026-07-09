@@ -17,8 +17,8 @@ class VideoContentTabBarPolicyTest {
         assertTrue(spec.tabsRowScrollable)
         assertEquals(12, spec.containerHorizontalPaddingDp)
         assertEquals(12, spec.tabHorizontalPaddingDp)
-        assertEquals(44, spec.segmentedControlHeightDp)
-        assertEquals(30, spec.segmentedControlIndicatorHeightDp)
+        assertEquals(40, spec.segmentedControlHeightDp)
+        assertEquals(27, spec.segmentedControlIndicatorHeightDp)
         assertTrue(
             hasVideoContentTabBarIndicatorScaleClearance(
                 containerHeightDp = spec.segmentedControlHeightDp,
@@ -50,10 +50,10 @@ class VideoContentTabBarPolicyTest {
         val policy = resolveVideoContentTabBarDanmakuActionLayoutPolicy(widthDp = 412)
 
         assertEquals("发弹幕", policy.sendLabel)
-        assertEquals(40, policy.secondaryControlHeightDp)
+        assertEquals(36, policy.secondaryControlHeightDp)
         assertEquals(20, policy.secondaryControlCornerRadiusDp)
-        assertEquals(40, policy.settingsButtonSizeDp)
-        assertEquals(20, policy.settingsIconSizeDp)
+        assertEquals(36, policy.settingsButtonSizeDp)
+        assertEquals(18, policy.settingsIconSizeDp)
     }
 
     @Test
@@ -65,7 +65,7 @@ class VideoContentTabBarPolicyTest {
         assertEquals(8, spec.tabHorizontalPaddingDp)
         assertEquals(10, spec.tabSpacingDp)
         assertEquals(16, spec.selectedTabFontSizeSp)
-        assertEquals(44, spec.segmentedControlHeightDp)
+        assertEquals(40, spec.segmentedControlHeightDp)
         assertTrue(
             hasVideoContentTabBarIndicatorScaleClearance(
                 containerHeightDp = spec.segmentedControlHeightDp,
@@ -73,10 +73,10 @@ class VideoContentTabBarPolicyTest {
             )
         )
         assertEquals("发弹幕", policy.sendLabel)
-        assertEquals(40, policy.secondaryControlHeightDp)
+        assertEquals(36, policy.secondaryControlHeightDp)
         assertEquals(20, policy.secondaryControlCornerRadiusDp)
-        assertEquals(40, policy.settingsButtonSizeDp)
-        assertEquals(20, policy.settingsIconSizeDp)
+        assertEquals(36, policy.settingsButtonSizeDp)
+        assertEquals(18, policy.settingsIconSizeDp)
     }
 
     @Test

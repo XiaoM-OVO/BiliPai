@@ -133,9 +133,9 @@ internal fun hasVideoContentTabBarIndicatorScaleClearance(
     return containerHeightDp >= indicatorHeightDp * bottomBarScale + 2f
 }
 
-internal const val VIDEO_CONTENT_LIQUID_DOCK_HEIGHT_DP = 44
-internal const val VIDEO_CONTENT_LIQUID_DOCK_INDICATOR_HEIGHT_DP = 30
-internal const val VIDEO_CONTENT_LIQUID_DOCK_LABEL_FONT_SIZE_SP = 15
+internal const val VIDEO_CONTENT_LIQUID_DOCK_HEIGHT_DP = 40
+internal const val VIDEO_CONTENT_LIQUID_DOCK_INDICATOR_HEIGHT_DP = 27
+internal const val VIDEO_CONTENT_LIQUID_DOCK_LABEL_FONT_SIZE_SP = 14
 
 internal data class VideoContentTabBarLiquidChromeSpec(
     val reusesLiquidGlassDock: Boolean,
@@ -182,20 +182,19 @@ internal fun resolveVideoContentTabBarLiquidChromeSpec(
 }
 
 internal fun resolveVideoContentTabBarLayoutSpec(widthDp: Int): VideoContentTabBarLayoutSpec {
-    val compactChrome = resolveCompactCapsuleChromeSpec(UiPreset.IOS, AndroidNativeVariant.MATERIAL3)
     return if (widthDp < 400) {
         VideoContentTabBarLayoutSpec(
             tabsRowWeight = 1f,
             tabsRowScrollable = true,
             containerHorizontalPaddingDp = 8,
             tabHorizontalPaddingDp = 8,
-            tabVerticalPaddingDp = 9,
+            tabVerticalPaddingDp = 7,
             tabSpacingDp = 10,
             selectedTabFontSizeSp = 16,
             unselectedTabFontSizeSp = 15,
             indicatorWidthDp = 28,
-            segmentedControlHeightDp = compactChrome.primaryHeightDp,
-            segmentedControlIndicatorHeightDp = 30
+            segmentedControlHeightDp = 40,
+            segmentedControlIndicatorHeightDp = 27
         )
     } else {
         VideoContentTabBarLayoutSpec(
@@ -203,13 +202,13 @@ internal fun resolveVideoContentTabBarLayoutSpec(widthDp: Int): VideoContentTabB
             tabsRowScrollable = true,
             containerHorizontalPaddingDp = 12,
             tabHorizontalPaddingDp = 12,
-            tabVerticalPaddingDp = 10,
+            tabVerticalPaddingDp = 8,
             tabSpacingDp = 16,
             selectedTabFontSizeSp = 17,
             unselectedTabFontSizeSp = 16,
             indicatorWidthDp = 32,
-            segmentedControlHeightDp = compactChrome.primaryHeightDp,
-            segmentedControlIndicatorHeightDp = 30
+            segmentedControlHeightDp = 40,
+            segmentedControlIndicatorHeightDp = 27
         )
     }
 }
@@ -244,10 +243,10 @@ internal fun resolveVideoContentTabBarDanmakuActionLayoutPolicy(widthDp: Int): V
             sendVerticalPaddingDp = 7,
             sendTextSizeSp = 11,
             sendLabel = "发弹幕",
-            secondaryControlHeightDp = compactChrome.secondaryButtonSizeDp,
+            secondaryControlHeightDp = 36,
             secondaryControlCornerRadiusDp = compactChrome.secondaryButtonCornerRadiusDp,
-            settingsButtonSizeDp = compactChrome.secondaryButtonSizeDp,
-            settingsIconSizeDp = compactChrome.iconSizeDp,
+            settingsButtonSizeDp = 36,
+            settingsIconSizeDp = 18,
             settingsLeadingPaddingDp = 4
         )
     } else {
@@ -261,10 +260,10 @@ internal fun resolveVideoContentTabBarDanmakuActionLayoutPolicy(widthDp: Int): V
             sendVerticalPaddingDp = 8,
             sendTextSizeSp = 12,
             sendLabel = "发弹幕",
-            secondaryControlHeightDp = compactChrome.secondaryButtonSizeDp,
+            secondaryControlHeightDp = 36,
             secondaryControlCornerRadiusDp = compactChrome.secondaryButtonCornerRadiusDp,
-            settingsButtonSizeDp = compactChrome.secondaryButtonSizeDp,
-            settingsIconSizeDp = compactChrome.iconSizeDp,
+            settingsButtonSizeDp = 36,
+            settingsIconSizeDp = 18,
             settingsLeadingPaddingDp = 6
         )
     }
@@ -1460,9 +1459,9 @@ private fun VideoContentTabBar(
                     .weight(layoutSpec.tabsRowWeight)
                     .padding(
                         start = 0.dp,
-                        top = if (liquidChromeSpec.reusesLiquidGlassDock) 0.dp else 5.dp,
+                        top = if (liquidChromeSpec.reusesLiquidGlassDock) 0.dp else 2.dp,
                         end = 8.dp,
-                        bottom = if (liquidChromeSpec.reusesLiquidGlassDock) 0.dp else 5.dp,
+                        bottom = if (liquidChromeSpec.reusesLiquidGlassDock) 0.dp else 2.dp,
                     ),
                 height = liquidChromeSpec.segmentedControlHeightDp.dp,
                 indicatorHeight = liquidChromeSpec.segmentedControlIndicatorHeightDp.dp,
@@ -1470,8 +1469,8 @@ private fun VideoContentTabBar(
                 backdrop = backdrop,
                 forceLiquidChrome = homeSettings.androidNativeLiquidGlassEnabled,
                 liquidGlassEffectsEnabled = liquidChromeSpec.liquidGlassEffectsEnabled,
-                // Keep press/swipe refraction aligned with home bottom bar indicator.
-                tapPressRefractionEnabled = true,
+                // Avoid extra press refraction in this compact in-content chrome.
+                tapPressRefractionEnabled = false,
             )
 
             // [新增] 恢复画面按钮 (仅在播放器折叠时显示)

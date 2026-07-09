@@ -14,9 +14,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.purebilibili.core.theme.AndroidNativeVariant
-import com.android.purebilibili.core.theme.UiPreset
-import com.android.purebilibili.core.ui.resolveCompactCapsuleChromeSpec
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.store.HomeSettings
 import com.android.purebilibili.core.store.SettingsManager
@@ -35,11 +32,10 @@ internal data class CommentSortSegmentedControlSpec(
 )
 
 internal fun resolveCommentSortSegmentedControlSpec(itemCount: Int): CommentSortSegmentedControlSpec {
-    val compactChrome = resolveCompactCapsuleChromeSpec(UiPreset.IOS, AndroidNativeVariant.MATERIAL3)
     return CommentSortSegmentedControlSpec(
         itemWidthDp = if (itemCount >= 4) 56 else 66,
-        heightDp = compactChrome.primaryHeightDp,
-        indicatorHeightDp = 30
+        heightDp = 40,
+        indicatorHeightDp = 27
     )
 }
 
@@ -73,7 +69,7 @@ fun CommentSortFilterBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .padding(top = 12.dp),
+            .padding(top = 6.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
         verticalArrangement = Arrangement.spacedBy(2.dp),
         horizontalArrangement = Arrangement.SpaceBetween
