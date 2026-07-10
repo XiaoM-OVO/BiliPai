@@ -74,7 +74,9 @@ class BottomBarMiuixStructureTest {
         assertTrue(kernelSuRendererSource.contains("miuixDrawBackdrop("))
         assertTrue(kernelSuRendererSource.contains("miuixVibrancy()"))
         assertTrue(kernelSuRendererSource.contains("miuixLens("))
-        assertTrue(kernelSuRendererSource.contains("rememberMiuixCombinedBackdrop(miuixBackdrop, tabsBackdrop)"))
+        assertTrue(kernelSuRendererSource.contains("val contentBackdrop = if (shouldRenderIndicatorBackdrop && miuixBackdrop != null)"))
+        assertTrue(kernelSuRendererSource.contains("tabsBackdrop\n            } else"))
+        assertFalse(kernelSuRendererSource.contains("rememberMiuixCombinedBackdrop("))
         assertTrue(kernelSuRendererSource.contains("val tabsBackdrop = rememberMiuixLayerBackdrop()"))
         assertTrue(
             kernelSuRendererSource.contains("shellProgress = backdropPresetProgress.shellProgress")

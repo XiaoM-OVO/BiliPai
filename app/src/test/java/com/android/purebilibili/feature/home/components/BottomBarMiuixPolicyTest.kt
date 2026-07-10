@@ -80,7 +80,9 @@ class BottomBarMiuixPolicyTest {
 
         assertTrue(source.contains("val tabsBackdrop = rememberMiuixLayerBackdrop()"))
         assertTrue(source.contains(".miuixLayerBackdrop(tabsBackdrop)"))
-        assertTrue(source.contains("rememberMiuixCombinedBackdrop(miuixBackdrop, tabsBackdrop)"))
+        assertTrue(source.contains("val contentBackdrop = if (shouldRenderIndicatorBackdrop && miuixBackdrop != null)"))
+        assertTrue(source.contains("tabsBackdrop\n            } else"))
+        assertFalse(source.contains("rememberMiuixCombinedBackdrop("))
         assertTrue(source.contains("miuixBlur(4.dp.toPx(), 4.dp.toPx())"))
         assertTrue(source.contains("refractionHeight = 24.dp.toPx()"))
         assertTrue(source.contains("refractionAmount = 24.dp.toPx()"))
@@ -92,10 +94,22 @@ class BottomBarMiuixPolicyTest {
 
         assertTrue(
             Regex(
-                """rememberMiuixCombinedBackdrop\(miuixBackdrop, tabsBackdrop\)[\s\S]*?miuixDrawBackdrop\([\s\S]*?effects = \{[\s\S]*?miuixLens\(""",
+                """val contentBackdrop = if \(shouldRenderIndicatorBackdrop && miuixBackdrop != null\)[\s\S]*?tabsBackdrop[\s\S]*?miuixDrawBackdrop\([\s\S]*?effects = \{[\s\S]*?miuixLens\(""",
                 RegexOption.MULTILINE
             ).containsMatchIn(source)
         )
+    }
+
+    @Test
+    fun `android native indicator consumes only the flattened tabs capture`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
+        val renderer = source
+            .substringAfter("private fun KernelSuAlignedBottomBar(")
+            .substringBefore("@Composable\nprivate fun AndroidNativeBottomBarItem(")
+
+        assertTrue(renderer.contains("val contentBackdrop = if (shouldRenderIndicatorBackdrop && miuixBackdrop != null)"))
+        assertTrue(renderer.contains("tabsBackdrop\n            } else"))
+        assertFalse(renderer.contains("rememberMiuixCombinedBackdrop("))
     }
 
     @Test

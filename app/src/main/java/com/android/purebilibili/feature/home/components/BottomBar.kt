@@ -154,7 +154,6 @@ import com.kyant.backdrop.shadow.Shadow
 import com.android.purebilibili.feature.home.components.liquid.InnerShadow as MiuixInnerShadow
 import com.android.purebilibili.feature.home.components.liquid.innerShadow as miuixInnerShadow
 import com.android.purebilibili.feature.home.components.liquid.lens as miuixLens
-import com.android.purebilibili.feature.home.components.liquid.rememberCombinedBackdrop as rememberMiuixCombinedBackdrop
 import com.android.purebilibili.feature.home.components.liquid.vibrancy as miuixVibrancy
 import androidx.compose.foundation.shape.RoundedCornerShape as RoundedCornerShapeAlias
 import androidx.compose.ui.Modifier.Companion.then
@@ -3388,10 +3387,12 @@ private fun KernelSuAlignedBottomBar(
             val shouldRenderIndicatorContentCapture =
                 shouldComposeDockContent &&
                     (shouldRenderRefractionCapture || isBottomBarPressActive)
-            val contentBackdrop = if (
-                shouldRenderIndicatorBackdrop && miuixBackdrop != null
-            ) {
-                rememberMiuixCombinedBackdrop(miuixBackdrop, tabsBackdrop)
+            // tabsBackdrop already records the global backdrop with the same blur/lens chain
+            // before adding tinted dock content. Drawing the global layer again through a
+            // CombinedBackdrop leaves a nested/reused RenderNode graph that overflows traversal
+            // on some Android 16 renderers.
+            val contentBackdrop = if (shouldRenderIndicatorBackdrop && miuixBackdrop != null) {
+                tabsBackdrop
             } else {
                 null
             }
